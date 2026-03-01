@@ -60,7 +60,7 @@ export default function Layout() {
   useEffect(() => {
     getSiteConfig().then((cfg) => {
       if (cfg.kakao && cfg.kakao !== "#") setKakaoUrl(cfg.kakao);
-      if (cfg.kakaoChannelId) setKakaoChannelId(cfg.kakaoChannelId);
+      // Removed kakaoChannelId override so it stays strictly hardcoded to _nTFqX
     }).catch(() => { });
   }, []);
 
