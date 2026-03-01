@@ -72,7 +72,7 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [policies, setPolicies] = useState<PolicySection[]>([]);
-  const [faqTitle, setFaqTitle] = useState("F&Q — GUIDE");
+  const [faqTitle, setFaqTitle] = useState("KakaoTalk Channel");
   const [faqSubtitle, setFaqSubtitle] = useState("Frequently asked questions & photographic guide");
   const [kakaoUrl, setKakaoUrl] = useState("#");
   const [loading, setLoading] = useState(true);
