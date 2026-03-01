@@ -75,7 +75,31 @@ export default function Contact() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      // 1. 파이어베이스에 데이터 저장 (관리자 페이지용)
       await addInquiry(formData);
+
+      // 2. EmailJS를 통해 네이버 메일로 실시간 알림 발송
+      if (
+        import.meta.env.VITE_EMAILJS_SERVICE_ID &&
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID &&
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+      ) {
+        await fetch("https://api.emailjs.com/api/v1.0/email/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            service_id: import.meta.env.VITE_EMAILJS_SERVICE_ID,
+            template_id: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+            user_id: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
+            template_params: {
+              ...formData,
+            },
+          }),
+        });
+      }
+
       setSubmitted(true);
       setFormData({
         name: "",
