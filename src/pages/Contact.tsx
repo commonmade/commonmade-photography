@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { MapPin, Phone, Mail, Instagram } from "lucide-react";
-import { getPageContent } from "../lib/firestoreService";
+import { addInquiry, getPageContent } from "../lib/firestoreService";
 
 // KakaoTalk 카카오채널 아이콘 (현재 아이콘 스타일 맞춤)
 function KakaoIcon({ size = 24 }: { size?: number }) {
@@ -41,7 +41,7 @@ const DEFAULTS = {
   subtitle: "",
   address: "123 Photography Lane\nCreative District, Seoul\nSouth Korea",
   phone: "+82 10 1234 5678",
-  email: "hello@commonmade.com",
+  email: "commonmade@naver.com",
   instagram: "@commonmade_photography",
   kakao: "commonmade",
   form_title: "Send an Inquiry",
@@ -52,6 +52,48 @@ const DEFAULTS = {
 export default function Contact() {
   const [content, setContent] = useState(DEFAULTS);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Form states
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    date: "",
+    category: "",
+    location: "",
+    message: "",
+  });
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await addInquiry(formData);
+      setSubmitted(true);
+      setFormData({
+        name: "",
+        phone: "",
+        email: "",
+        date: "",
+        category: "",
+        location: "",
+        message: "",
+      });
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (error) {
+      console.error("Error submitting inquiry:", error);
+      alert("Failed to submit inquiry. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     getPageContent("contact")
@@ -174,7 +216,7 @@ export default function Contact() {
             </p>
           </div>
 
-          <form className="space-y-8" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-8" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
                 <label
@@ -187,6 +229,8 @@ export default function Contact() {
                   type="text"
                   id="name"
                   className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-black transition-colors bg-transparent text-sm"
+                  value={formData.name}
+                  onChange={handleInputChange}
                   required
                 />
               </div>
@@ -201,6 +245,8 @@ export default function Contact() {
                   type="tel"
                   id="phone"
                   className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-black transition-colors bg-transparent text-sm"
+                  value={formData.phone}
+                  onChange={handleInputChange}
                   required
                 />
               </div>
@@ -217,6 +263,8 @@ export default function Contact() {
                 type="email"
                 id="email"
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-black transition-colors bg-transparent text-sm"
+                value={formData.email}
+                onChange={handleInputChange}
                 required
               />
             </div>
@@ -233,6 +281,8 @@ export default function Contact() {
                   type="date"
                   id="date"
                   className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-black transition-colors bg-transparent text-sm text-gray-700"
+                  value={formData.date}
+                  onChange={handleInputChange}
                 />
               </div>
               <div>
@@ -245,6 +295,8 @@ export default function Contact() {
                 <select
                   id="category"
                   className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-black transition-colors bg-transparent text-sm text-gray-700 appearance-none"
+                  value={formData.category}
+                  onChange={handleInputChange}
                 >
                   <option value="">Select a category</option>
                   <option value="wedding">Wedding Day</option>
@@ -266,6 +318,8 @@ export default function Contact() {
                 type="text"
                 id="location"
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-black transition-colors bg-transparent text-sm"
+                value={formData.location}
+                onChange={handleInputChange}
               />
             </div>
 
@@ -281,16 +335,24 @@ export default function Contact() {
                 rows={5}
                 className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-black transition-colors bg-transparent text-sm resize-none"
                 placeholder="Tell us more about your event..."
+                value={formData.message}
+                onChange={handleInputChange}
               />
             </div>
 
             <div className="pt-8 text-center md:text-left">
               <button
                 type="submit"
-                className="bg-[#3d3d3d] text-white px-12 py-4 text-xs uppercase tracking-[0.2em] hover:bg-[#2a2a2a] transition-colors duration-300"
+                disabled={submitting}
+                className="bg-[#3d3d3d] text-white px-12 py-4 text-xs uppercase tracking-[0.2em] hover:bg-[#2a2a2a] transition-colors duration-300 disabled:opacity-50"
               >
-                Submit Inquiry
+                {submitting ? "Submitting..." : "Submit Inquiry"}
               </button>
+              {submitted && (
+                <p className="mt-4 text-sm text-green-600 animate-in fade-in">
+                  문의가 성공적으로 전달되었습니다. 감사합니다.
+                </p>
+              )}
             </div>
           </form>
         </div>

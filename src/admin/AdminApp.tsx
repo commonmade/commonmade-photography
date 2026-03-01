@@ -11,6 +11,7 @@ import SiteConfigPage from "./pages/SiteConfigPage";
 import FaqManager from "./pages/FaqManager";
 import ContactManager from "./pages/ContactManager";
 import ProductManager from "./pages/ProductManager";
+import InquiryManager from "./pages/InquiryManager";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null | "loading">("loading");
@@ -49,6 +50,7 @@ export default function AdminApp() {
                 <Route path="slides" element={<SlideManager />} />
                 <Route path="faq" element={<FaqManager />} />
                 <Route path="contact-manager" element={<ContactManager />} />
+                <Route path="inquiry-manager" element={<InquiryManager />} />
                 <Route path="product-manager" element={<ProductManager />} />
                 <Route path="config" element={<SiteConfigPage />} />
             </Route>

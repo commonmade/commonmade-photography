@@ -10,6 +10,7 @@ import {
     where,
     serverTimestamp,
     setDoc,
+    orderBy,
 } from "firebase/firestore";
 import {
     ref,
@@ -96,6 +97,46 @@ export async function getCategories(): Promise<Category[]> {
     const snap = await getDocs(collection(db, "categories"));
     const cats = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Category));
     return cats.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+// ─── Inquiries ─────────────────────────────────────────────────────────────
+
+export interface Inquiry {
+    id: string;
+    name: string;
+    phone: string;
+    email: string;
+    date: string;       // Event Date
+    category: string;
+    location: string;
+    message: string;
+    createdAt: number;
+    read: boolean;
+}
+
+export async function addInquiry(inquiry: Omit<Inquiry, "id" | "createdAt" | "read">): Promise<string> {
+    const docRef = await addDoc(collection(db, "inquiries"), {
+        ...inquiry,
+        createdAt: Date.now(),
+        read: false,
+    });
+    return docRef.id;
+}
+
+export async function getInquiries(): Promise<Inquiry[]> {
+    const q = query(collection(db, "inquiries"), orderBy("createdAt", "desc"));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Inquiry));
+}
+
+export async function markInquiryRead(id: string): Promise<void> {
+    const docRef = doc(db, "inquiries", id);
+    await updateDoc(docRef, { read: true });
+}
+
+export async function deleteInquiry(id: string): Promise<void> {
+    const docRef = doc(db, "inquiries", id);
+    await deleteDoc(docRef);
 }
 
 // ─── Albums ────────────────────────────────────────────────────────────────
