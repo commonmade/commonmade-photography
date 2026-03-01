@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { Menu, X, Instagram } from "lucide-react";
+import KakaoChatButton from "./KakaoChatButton";
 import { useState, useEffect } from "react";
 import { getSiteConfig } from "../lib/firestoreService";
 
@@ -47,6 +48,7 @@ export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [kakaoUrl, setKakaoUrl] = useState("#");
+  const [kakaoChannelId, setKakaoChannelId] = useState("");
   const location = useLocation();
 
   // Close mobile menu on route change
@@ -58,6 +60,7 @@ export default function Layout() {
   useEffect(() => {
     getSiteConfig().then((cfg) => {
       if (cfg.kakao && cfg.kakao !== "#") setKakaoUrl(cfg.kakao);
+      if (cfg.kakaoChannelId) setKakaoChannelId(cfg.kakaoChannelId);
     }).catch(() => { });
   }, []);
 
@@ -226,6 +229,8 @@ export default function Layout() {
           </div>
         </footer>
       </div>
+
+      <KakaoChatButton channelId={kakaoChannelId} />
     </div>
   );
 }

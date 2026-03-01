@@ -5,7 +5,8 @@ import { Check, Loader, Database } from "lucide-react";
 
 const CONFIG_FIELDS = [
     { key: "instagram", label: "Instagram URL", placeholder: "https://instagram.com/commonmade_photography" },
-    { key: "kakao", label: "카카오톡 링크", placeholder: "https://open.kakao.com/..." },
+    { key: "kakao", label: "카카오 채널 링크 (기존)", placeholder: "https://pf.kakao.com/..." },
+    { key: "kakaoChannelId", label: "카카오 채널 검색용 ID (플로팅 톡버튼용)", placeholder: "예: _abcde (@제외)" },
     { key: "email", label: "이메일", placeholder: "hello@commonmade.com" },
     { key: "phone", label: "전화번호", placeholder: "+82 10 0000 0000" },
     { key: "address", label: "주소", placeholder: "Seoul, South Korea" },

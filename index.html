@@ -1,22 +1,35 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
-    <!-- EmailJS Public Key Loading -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-    <script type="text/javascript">
-      (function() {
-        emailjs.init({
-          publicKey: "JaCqR7rJhlmJxrPPI",
-        });
-      })();
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
 
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Google AI Studio App</title>
+  <!-- EmailJS Public Key Loading -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function () {
+      emailjs.init({
+        publicKey: "JaCqR7rJhlmJxrPPI",
+      });
+    })();
+  </script>
+  <!-- Kakao SDK -->
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"
+    integrity="sha384-DKYJZ8NLiK8MN4/C5P2dtOty509Svdz00Q00F/jwdB0yE3e0kZEsv5rUqEaGjP0" crossorigin="anonymous"></script>
+  <script>
+    // Initialize Kakao SDK
+    window.onload = function () {
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        window.Kakao.init('a91ed0ec80cf23c8cd9a3226c1b16abe');
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>
