@@ -35,7 +35,7 @@ function PageHeaderSection() {
 
     useEffect(() => {
         getPageContent("faq").then((data) => {
-            setFaqTitle(String(data.faq_title ?? "KakaoTalk Channel"));
+            setFaqTitle(String(data.faq_title ?? "F&Q — GUIDE"));
             setFaqSubtitle(String(data.faq_subtitle ?? "Frequently asked questions & photographic guide"));
         }).finally(() => setLoading(false));
     }, []);
@@ -70,7 +70,7 @@ function PageHeaderSection() {
                         className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
                         value={faqTitle}
                         onChange={(e) => setFaqTitle(e.target.value)}
-                        placeholder="KakaoTalk Channel"
+                        placeholder="F&Q — GUIDE"
                     />
                 </div>
                 <div>

@@ -40,7 +40,7 @@ const navLinks = [
   { name: "Baby&Family", hoverName: "아기&가족", path: "/baby-family" },
   { name: "Moments", hoverName: "행사", path: "/moments" },
   { name: "Product", hoverName: "상품구성", path: "/product" },
-  { name: "KakaoTalk Channel", hoverName: "카카오톡상담", path: "/faq" },
+  { name: "F&Q", hoverName: "자주묻는질문", path: "/faq" },
   { name: "Contact", hoverName: "연락", path: "/contact" },
 ];
 
