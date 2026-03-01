@@ -47,8 +47,8 @@ const navLinks = [
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [kakaoUrl, setKakaoUrl] = useState("#");
-  const [kakaoChannelId, setKakaoChannelId] = useState("");
+  const [kakaoUrl, setKakaoUrl] = useState("http://pf.kakao.com/_nTFqX");
+  const [kakaoChannelId, setKakaoChannelId] = useState("_nTFqX");
   const location = useLocation();
 
   // Close mobile menu on route change
