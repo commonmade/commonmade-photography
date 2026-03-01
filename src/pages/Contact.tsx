@@ -81,23 +81,17 @@ export default function Contact() {
       // 2. EmailJS를 통해 네이버 메일로 실시간 알림 발송
       if (
         import.meta.env.VITE_EMAILJS_SERVICE_ID &&
-        import.meta.env.VITE_EMAILJS_TEMPLATE_ID &&
-        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID
       ) {
-        await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            service_id: import.meta.env.VITE_EMAILJS_SERVICE_ID,
-            template_id: import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-            user_id: import.meta.env.VITE_EMAILJS_PUBLIC_KEY,
-            template_params: {
-              ...formData,
-            },
-          }),
-        });
+        // @ts-ignore
+        if (window.emailjs) {
+          // @ts-ignore
+          await window.emailjs.send(
+            import.meta.env.VITE_EMAILJS_SERVICE_ID,
+            import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+            formData
+          );
+        }
       }
 
       setSubmitted(true);
