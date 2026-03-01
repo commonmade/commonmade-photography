@@ -221,7 +221,7 @@ export default function Contact() {
                 KakaoTalk Channel
               </h3>
               <a
-                href={`https://pf.kakao.com/_${content.kakao}`}
+                href="https://pf.kakao.com/_nTFqX/chat"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-gray-500 leading-relaxed hover:text-black transition-colors"
