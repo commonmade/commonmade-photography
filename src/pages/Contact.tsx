@@ -85,12 +85,21 @@ export default function Contact() {
       ) {
         // @ts-ignore
         if (window.emailjs) {
-          // @ts-ignore
-          await window.emailjs.send(
-            import.meta.env.VITE_EMAILJS_SERVICE_ID,
-            import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
-            formData
-          );
+          try {
+            console.log("Sending to EmailJS with params:", formData);
+            // @ts-ignore
+            const response = await window.emailjs.send(
+              import.meta.env.VITE_EMAILJS_SERVICE_ID,
+              import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+              formData
+            );
+            console.log("EmailJS Success:", response);
+          } catch (emailError) {
+            console.error("EmailJS Error details:", emailError);
+            alert("메일 전송 중 오류가 발생했습니다. (EmailJS Error)\n" + JSON.stringify(emailError));
+          }
+        } else {
+          console.error("window.emailjs is undefined");
         }
       }
 
