@@ -125,7 +125,7 @@ export default function FAQ() {
             className="inline-flex items-center justify-center px-7 py-3 bg-[#3d3d3d] hover:bg-[#2a2a2a] transition-colors duration-300 cursor-pointer group"
           >
             <span className="text-white text-[10px] md:text-xs tracking-[0.25em] uppercase font-light">
-              Q&amp;A and Reservation
+              KakaoTalk Channel
             </span>
           </a>
         </div>
