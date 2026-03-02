@@ -1,29 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Google AI Studio App</title>
-  <!-- EmailJS Public Key Loading -->
-  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <title>CommonMade Photography</title>
+  <meta name="description" content="커먼메이드 포토그래피 | 세련되고 감각적인 웨딩, 베이비, 패밀리, 모먼트 스냅 사진 전문 스튜디오" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="CommonMade Photography" />
+  <meta property="og:description" content="커먼메이드 포토그래피 | 감각적인 본식 스냅, 가족 사진, 잊지 못할 당신의 순간을 기록합니다." />
+  <meta property="og:site_name" content="CommonMade Photography" />
+  <!-- You can add a default sharing image URL below if you have one -->
+  <!-- <meta property="og:image" content="https://example.com/share-image.jpg" /> -->
+
+  <!-- EmailJS Public Key Loading (Deferred) -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
   <script type="text/javascript">
-    (function () {
-      emailjs.init({
-        publicKey: "JaCqR7rJhlmJxrPPI",
-      });
-    })();
-  </script>
-  <!-- Kakao SDK -->
-  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js"
-    integrity="sha384-DKYJZ8NLiK8MN4/C5P2dtOty509Svdz00Q00F/jwdB0yE3e0kZEsv5rUqEaGjP0" crossorigin="anonymous"></script>
-  <script>
-    // Initialize Kakao SDK
-    window.onload = function () {
-      if (window.Kakao && !window.Kakao.isInitialized()) {
-        window.Kakao.init('a91ed0ec80cf23c8cd9a3226c1b16abe');
+    window.addEventListener("DOMContentLoaded", function () {
+      if (typeof emailjs !== "undefined") {
+        emailjs.init({
+          publicKey: "JaCqR7rJhlmJxrPPI",
+        });
       }
-    }
+    });
   </script>
 </head>
 
