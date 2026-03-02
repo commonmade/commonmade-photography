@@ -59,17 +59,17 @@ export default function Home() {
             position = "translate-x-0 opacity-100 scale-100";
             zIndex = 20;
           } else if (index === (currentIndex - 1 + slides.length) % slides.length) {
-            position = "-translate-x-[102.5%] opacity-60 scale-95";
+            position = "-translate-x-full opacity-0 scale-95";
             zIndex = 10;
           } else if (index === (currentIndex + 1) % slides.length) {
-            position = "translate-x-[102.5%] opacity-60 scale-95";
+            position = "translate-x-full opacity-0 scale-95";
             zIndex = 10;
           }
 
           return (
             <div
               key={index}
-              className={`absolute w-[95%] md:w-[75%] lg:w-[65%] h-full transition-all duration-700 ease-in-out flex items-center justify-center ${position}`}
+              className={`absolute w-full h-full transition-all duration-700 ease-in-out flex items-center justify-center ${position}`}
               style={{ zIndex }}
             >
               <img
@@ -77,7 +77,7 @@ export default function Home() {
                 decoding="async"
                 src={img}
                 alt={`Slide ${index + 1}`}
-                className="w-full h-full object-cover md:object-contain"
+                className="w-full h-full object-cover"
               />
             </div>
           );
