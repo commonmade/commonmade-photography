@@ -184,6 +184,10 @@ export async function deleteAlbum(id: string): Promise<void> {
     await deleteDoc(doc(db, "albums", id));
 }
 
+export async function updateAlbumOrder(id: string, order: number): Promise<void> {
+    await updateDoc(doc(db, "albums", id), { order });
+}
+
 // ─── Photos ────────────────────────────────────────────────────────────────
 
 export async function getPhotosByAlbum(albumId: string): Promise<Photo[]> {

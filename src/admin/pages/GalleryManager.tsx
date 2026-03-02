@@ -8,6 +8,7 @@ import {
     uploadPhoto,
     deletePhoto,
     updatePhotoOrder,
+    updateAlbumOrder,
     type Album,
     type Photo,
 } from "../../lib/firestoreService";
@@ -148,6 +149,10 @@ export default function GalleryManager() {
     const [deletingPhoto, setDeletingPhoto] = useState<string | null>(null);
     const [deletingAlbum, setDeletingAlbum] = useState<string | null>(null);
 
+    // 앨범 드래그 순서 변경
+    const [albumDragIdx, setAlbumDragIdx] = useState<number | null>(null);
+    const [albumOverIdx, setAlbumOverIdx] = useState<number | null>(null);
+
     // 사진 드래그 순서 변경
     const [photoDragIdx, setPhotoDragIdx] = useState<number | null>(null);
     const [photoOverIdx, setPhotoOverIdx] = useState<number | null>(null);
@@ -188,6 +193,46 @@ export default function GalleryManager() {
         } catch (err) {
             console.error("사진 순서 저장 실패:", err);
             await loadPhotos(albumId);
+        }
+    };
+
+    const handleAlbumDragStart = (e: React.DragEvent, idx: number) => {
+        setAlbumDragIdx(idx);
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleAlbumDragOver = (e: React.DragEvent, idx: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (albumDragIdx !== null && idx !== albumDragIdx) {
+            setAlbumOverIdx(idx);
+        }
+    };
+
+    const handleAlbumDragEnd = async () => {
+        if (albumDragIdx === null || albumOverIdx === null || albumDragIdx === albumOverIdx) {
+            setAlbumDragIdx(null);
+            setAlbumOverIdx(null);
+            return;
+        }
+
+        const newAlbums = [...albums];
+        const [moved] = newAlbums.splice(albumDragIdx, 1);
+        newAlbums.splice(albumOverIdx, 0, moved);
+
+        // Optimistic UI update
+        setAlbums(newAlbums);
+        setAlbumDragIdx(null);
+        setAlbumOverIdx(null);
+
+        // Update in DB
+        try {
+            await Promise.all(
+                newAlbums.map((a, i) => updateAlbumOrder(a.id, i))
+            );
+        } catch (e) {
+            console.error("Failed to update album order", e);
+            loadAlbums(); // Revert on failure
         }
     };
 
@@ -403,217 +448,233 @@ export default function GalleryManager() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {albums.map((album) => (
-                        <div key={album.id} className="border border-gray-200 rounded-xl bg-white overflow-hidden">
-                            {/* Album Header */}
-                            <div className="flex items-center gap-4 p-5">
-                                {/* Cover */}
-                                <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                                    {album.coverImageUrl ? (
-                                        <img src={album.coverImageUrl} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <Upload size={16} className="text-gray-300" />
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Info / Edit Form */}
-                                {editingAlbum === album.id ? (
-                                    <div className="flex-1 grid grid-cols-3 gap-3">
-                                        <input
-                                            className="border-b border-gray-300 py-1 text-sm focus:outline-none focus:border-black"
-                                            value={editForm.title}
-                                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                            placeholder="제목"
-                                        />
-                                        <input
-                                            className="border-b border-gray-300 py-1 text-sm focus:outline-none focus:border-black"
-                                            value={editForm.subtitle}
-                                            onChange={(e) => setEditForm({ ...editForm, subtitle: e.target.value })}
-                                            placeholder="부제목"
-                                        />
-                                        <input
-                                            className="border-b border-gray-300 py-1 text-sm focus:outline-none focus:border-black"
-                                            value={editForm.location}
-                                            onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                                            placeholder="장소"
-                                        />
+                    {albums.map((album, idx) => {
+                        const isDragging = albumDragIdx === idx;
+                        const isOver = albumOverIdx === idx;
+                        return (
+                            <div
+                                key={album.id}
+                                draggable
+                                onDragStart={(e) => handleAlbumDragStart(e, idx)}
+                                onDragOver={(e) => handleAlbumDragOver(e, idx)}
+                                onDragEnd={handleAlbumDragEnd}
+                                onDragLeave={() => { if (albumOverIdx === idx) setAlbumOverIdx(null); }}
+                                className={`border border-gray-200 rounded-xl bg-white overflow-hidden transition-all duration-200 cursor-grab active:cursor-grabbing ${isDragging ? "opacity-30 scale-[0.98]" : isOver ? "ring-2 ring-black scale-[1.01]" : ""}`}
+                            >
+                                {/* Album Header */}
+                                <div className="flex items-center gap-4 p-5">
+                                    {/* Drag Handle */}
+                                    <div className="text-gray-300">
+                                        <GripVertical size={20} />
                                     </div>
-                                ) : (
-                                    <div className="flex-1">
-                                        <p className="text-sm font-medium tracking-widest uppercase text-black">{album.title}</p>
-                                        <p className="text-xs text-gray-400 mt-0.5">{album.location || album.subtitle || "–"}</p>
-                                    </div>
-                                )}
-
-                                {/* Actions */}
-                                <div className="flex items-center gap-1.5">
-                                    {editingAlbum === album.id ? (
-                                        <>
-                                            <button
-                                                onClick={() => handleSaveEdit(album.id)}
-                                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                                title="저장"
-                                            >
-                                                <Check size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => setEditingAlbum(null)}
-                                                className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors"
-                                                title="취소"
-                                            >
-                                                <X size={16} />
-                                            </button>
-                                        </>
-                                    ) : (
-                                        <button
-                                            onClick={() => {
-                                                setEditingAlbum(album.id);
-                                                setEditForm({ title: album.title, subtitle: album.subtitle || "", location: album.location || "" });
-                                            }}
-                                            className="p-2 text-gray-400 hover:text-black hover:bg-gray-50 rounded-lg transition-colors"
-                                            title="편집"
-                                        >
-                                            <Edit2 size={15} />
-                                        </button>
-                                    )}
-                                    {deletingAlbum === album.id ? (
-                                        <button
-                                            onClick={() => handleDeleteAlbum(album.id)}
-                                            className="px-2 py-1 bg-red-500 text-white text-xs rounded-lg transition-colors animate-pulse whitespace-nowrap"
-                                        >
-                                            삭제?
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => handleDeleteAlbum(album.id)}
-                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="삭제"
-                                        >
-                                            <Trash2 size={15} />
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={() => toggleAlbum(album.id)}
-                                        className={`p-2 rounded-lg transition-colors ml-1 ${expandedAlbum === album.id
-                                            ? "bg-gray-100 text-black"
-                                            : "text-gray-400 hover:text-black hover:bg-gray-50"
-                                            }`}
-                                        title={expandedAlbum === album.id ? "닫기" : "사진 보기/업로드"}
-                                    >
-                                        {expandedAlbum === album.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Photo Section */}
-                            {expandedAlbum === album.id && (
-                                <div className="border-t border-gray-100 p-5 bg-gray-50/30">
-                                    {/* 업로드 영역 */}
-                                    <PhotoUploadZone
-                                        albumId={album.id}
-                                        currentPhotoCount={photos[album.id]?.length ?? 0}
-                                        onUploadComplete={async () => {
-                                            await loadPhotos(album.id);
-                                            // 첫 사진이면 커버로 자동 설정
-                                            const updated = await getPhotosByAlbum(album.id);
-                                            if (updated.length === 1 && !album.coverImageUrl) {
-                                                await updateAlbum(album.id, { coverImageUrl: updated[0].url });
-                                                await loadAlbums();
-                                            }
-                                        }}
-                                    />
-
-                                    {/* Photo Grid */}
-                                    {!photos[album.id] ? (
-                                        <div className="flex justify-center py-8">
-                                            <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-400 rounded-full animate-spin"></div>
-                                        </div>
-                                    ) : photos[album.id].length === 0 ? (
-                                        <p className="text-xs text-gray-300 uppercase tracking-widest text-center py-4">
-                                            아직 사진이 없습니다
-                                        </p>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center justify-between mb-3">
-                                                <p className="text-[10px] text-gray-400 uppercase tracking-widest">
-                                                    {photos[album.id].length}장의 사진
-                                                </p>
-                                                <p className="text-[10px] text-gray-300 uppercase tracking-widest">
-                                                    드래그하여 순서 변경
-                                                </p>
+                                    {/* Cover */}
+                                    <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                                        {album.coverImageUrl ? (
+                                            <img src={album.coverImageUrl} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <Upload size={16} className="text-gray-300" />
                                             </div>
-                                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                                                {photos[album.id].map((photo, idx) => {
-                                                    const isDragging = photoDragAlbum === album.id && photoDragIdx === idx;
-                                                    const isOver = photoDragAlbum === album.id && photoOverIdx === idx;
-                                                    return (
-                                                        <div
-                                                            key={photo.id}
-                                                            draggable
-                                                            onDragStart={(e) => handlePhotoDragStart(e, album.id, idx)}
-                                                            onDragOver={(e) => handlePhotoDragOver(e, idx)}
-                                                            onDragEnd={() => handlePhotoDragEnd(album.id)}
-                                                            onDragLeave={() => { if (photoOverIdx === idx) setPhotoOverIdx(null); }}
-                                                            className={`relative group aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-all select-none ${isDragging ? "opacity-30 scale-90" : isOver ? "ring-2 ring-black ring-offset-1 scale-105" : ""
-                                                                }`}
-                                                        >
-                                                            <img src={photo.url} alt="" className="w-full h-full object-cover" draggable={false} />
-                                                            {/* Order Badge */}
-                                                            <div className="absolute top-1 right-1 bg-black/60 text-white text-[8px] w-5 h-5 rounded flex items-center justify-center font-medium opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                                {idx + 1}
-                                                            </div>
-                                                            {/* Drag Handle */}
-                                                            <div className="absolute top-1 left-1 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                                <GripVertical size={14} />
-                                                            </div>
-                                                            {/* Hover Actions */}
-                                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end justify-center gap-1.5 pb-2 opacity-0 group-hover:opacity-100 pointer-events-none">
-                                                                <button
-                                                                    title="커버로 설정"
-                                                                    onMouseDown={(e) => e.stopPropagation()}
-                                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingPhoto(null); handleSetCover(album.id, photo.url); }}
-                                                                    className="p-1.5 bg-white/90 rounded-lg text-yellow-500 hover:bg-white transition-colors pointer-events-auto cursor-pointer relative z-10"
-                                                                >
-                                                                    ⭐
-                                                                </button>
-                                                                {deletingPhoto === photo.id ? (
+                                        )}
+                                    </div>
+
+                                    {/* Info / Edit Form */}
+                                    {editingAlbum === album.id ? (
+                                        <div className="flex-1 grid grid-cols-3 gap-3">
+                                            <input
+                                                className="border-b border-gray-300 py-1 text-sm focus:outline-none focus:border-black"
+                                                value={editForm.title}
+                                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                                placeholder="제목"
+                                            />
+                                            <input
+                                                className="border-b border-gray-300 py-1 text-sm focus:outline-none focus:border-black"
+                                                value={editForm.subtitle}
+                                                onChange={(e) => setEditForm({ ...editForm, subtitle: e.target.value })}
+                                                placeholder="부제목"
+                                            />
+                                            <input
+                                                className="border-b border-gray-300 py-1 text-sm focus:outline-none focus:border-black"
+                                                value={editForm.location}
+                                                onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                                                placeholder="장소"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="flex-1">
+                                            <p className="text-sm font-medium tracking-widest uppercase text-black">{album.title}</p>
+                                            <p className="text-xs text-gray-400 mt-0.5">{album.location || album.subtitle || "–"}</p>
+                                        </div>
+                                    )}
+
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-1.5">
+                                        {editingAlbum === album.id ? (
+                                            <>
+                                                <button
+                                                    onClick={() => handleSaveEdit(album.id)}
+                                                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                    title="저장"
+                                                >
+                                                    <Check size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setEditingAlbum(null)}
+                                                    className="p-2 text-gray-400 hover:bg-gray-50 rounded-lg transition-colors"
+                                                    title="취소"
+                                                >
+                                                    <X size={16} />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    setEditingAlbum(album.id);
+                                                    setEditForm({ title: album.title, subtitle: album.subtitle || "", location: album.location || "" });
+                                                }}
+                                                className="p-2 text-gray-400 hover:text-black hover:bg-gray-50 rounded-lg transition-colors"
+                                                title="편집"
+                                            >
+                                                <Edit2 size={15} />
+                                            </button>
+                                        )}
+                                        {deletingAlbum === album.id ? (
+                                            <button
+                                                onClick={() => handleDeleteAlbum(album.id)}
+                                                className="px-2 py-1 bg-red-500 text-white text-xs rounded-lg transition-colors animate-pulse whitespace-nowrap"
+                                            >
+                                                삭제?
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => handleDeleteAlbum(album.id)}
+                                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                title="삭제"
+                                            >
+                                                <Trash2 size={15} />
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={() => toggleAlbum(album.id)}
+                                            className={`p-2 rounded-lg transition-colors ml-1 ${expandedAlbum === album.id
+                                                ? "bg-gray-100 text-black"
+                                                : "text-gray-400 hover:text-black hover:bg-gray-50"
+                                                }`}
+                                            title={expandedAlbum === album.id ? "닫기" : "사진 보기/업로드"}
+                                        >
+                                            {expandedAlbum === album.id ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Photo Section */}
+                                {expandedAlbum === album.id && (
+                                    <div className="border-t border-gray-100 p-5 bg-gray-50/30">
+                                        {/* 업로드 영역 */}
+                                        <PhotoUploadZone
+                                            albumId={album.id}
+                                            currentPhotoCount={photos[album.id]?.length ?? 0}
+                                            onUploadComplete={async () => {
+                                                await loadPhotos(album.id);
+                                                // 첫 사진이면 커버로 자동 설정
+                                                const updated = await getPhotosByAlbum(album.id);
+                                                if (updated.length === 1 && !album.coverImageUrl) {
+                                                    await updateAlbum(album.id, { coverImageUrl: updated[0].url });
+                                                    await loadAlbums();
+                                                }
+                                            }}
+                                        />
+
+                                        {/* Photo Grid */}
+                                        {!photos[album.id] ? (
+                                            <div className="flex justify-center py-8">
+                                                <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-400 rounded-full animate-spin"></div>
+                                            </div>
+                                        ) : photos[album.id].length === 0 ? (
+                                            <p className="text-xs text-gray-300 uppercase tracking-widest text-center py-4">
+                                                아직 사진이 없습니다
+                                            </p>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <p className="text-[10px] text-gray-400 uppercase tracking-widest">
+                                                        {photos[album.id].length}장의 사진
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-300 uppercase tracking-widest">
+                                                        드래그하여 순서 변경
+                                                    </p>
+                                                </div>
+                                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                                                    {photos[album.id].map((photo, idx) => {
+                                                        const isDragging = photoDragAlbum === album.id && photoDragIdx === idx;
+                                                        const isOver = photoDragAlbum === album.id && photoOverIdx === idx;
+                                                        return (
+                                                            <div
+                                                                key={photo.id}
+                                                                draggable
+                                                                onDragStart={(e) => handlePhotoDragStart(e, album.id, idx)}
+                                                                onDragOver={(e) => handlePhotoDragOver(e, idx)}
+                                                                onDragEnd={() => handlePhotoDragEnd(album.id)}
+                                                                onDragLeave={() => { if (photoOverIdx === idx) setPhotoOverIdx(null); }}
+                                                                className={`relative group aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-grab active:cursor-grabbing transition-all select-none ${isDragging ? "opacity-30 scale-90" : isOver ? "ring-2 ring-black ring-offset-1 scale-105" : ""
+                                                                    }`}
+                                                            >
+                                                                <img src={photo.url} alt="" className="w-full h-full object-cover" draggable={false} />
+                                                                {/* Order Badge */}
+                                                                <div className="absolute top-1 right-1 bg-black/60 text-white text-[8px] w-5 h-5 rounded flex items-center justify-center font-medium opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                                    {idx + 1}
+                                                                </div>
+                                                                {/* Drag Handle */}
+                                                                <div className="absolute top-1 left-1 text-white/70 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                                    <GripVertical size={14} />
+                                                                </div>
+                                                                {/* Hover Actions */}
+                                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end justify-center gap-1.5 pb-2 opacity-0 group-hover:opacity-100 pointer-events-none">
                                                                     <button
-                                                                        title="삭제 확인"
+                                                                        title="커버로 설정"
                                                                         onMouseDown={(e) => e.stopPropagation()}
-                                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeletePhoto(album.id, photo.id, photo.url); }}
-                                                                        className="px-2 py-1 bg-red-500 text-white text-[9px] rounded-lg font-medium pointer-events-auto cursor-pointer relative z-10 animate-pulse"
+                                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingPhoto(null); handleSetCover(album.id, photo.url); }}
+                                                                        className="p-1.5 bg-white/90 rounded-lg text-yellow-500 hover:bg-white transition-colors pointer-events-auto cursor-pointer relative z-10"
                                                                     >
-                                                                        삭제?
+                                                                        ⭐
                                                                     </button>
-                                                                ) : (
-                                                                    <button
-                                                                        title="삭제"
-                                                                        onMouseDown={(e) => e.stopPropagation()}
-                                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeletePhoto(album.id, photo.id, photo.url); }}
-                                                                        className="p-1.5 bg-white/90 rounded-lg text-red-500 hover:bg-white transition-colors pointer-events-auto cursor-pointer relative z-10"
-                                                                    >
-                                                                        <Trash2 size={12} />
-                                                                    </button>
+                                                                    {deletingPhoto === photo.id ? (
+                                                                        <button
+                                                                            title="삭제 확인"
+                                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeletePhoto(album.id, photo.id, photo.url); }}
+                                                                            className="px-2 py-1 bg-red-500 text-white text-[9px] rounded-lg font-medium pointer-events-auto cursor-pointer relative z-10 animate-pulse"
+                                                                        >
+                                                                            삭제?
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            title="삭제"
+                                                                            onMouseDown={(e) => e.stopPropagation()}
+                                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeletePhoto(album.id, photo.id, photo.url); }}
+                                                                            className="p-1.5 bg-white/90 rounded-lg text-red-500 hover:bg-white transition-colors pointer-events-auto cursor-pointer relative z-10"
+                                                                        >
+                                                                            <Trash2 size={12} />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                                {/* Cover Badge */}
+                                                                {album.coverImageUrl === photo.url && (
+                                                                    <div className="absolute top-1 left-1 bg-black text-white text-[8px] px-1.5 py-0.5 rounded font-medium z-10 pointer-events-none">
+                                                                        COVER
+                                                                    </div>
                                                                 )}
                                                             </div>
-                                                            {/* Cover Badge */}
-                                                            {album.coverImageUrl === photo.url && (
-                                                                <div className="absolute top-1 left-1 bg-black text-white text-[8px] px-1.5 py-0.5 rounded font-medium z-10 pointer-events-none">
-                                                                    COVER
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ))}
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
                 </div>
             )}
         </div>
