@@ -29,7 +29,6 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
   const isBabyFamily = categorySlug === "baby-family";
   const isMoments = categorySlug === "moments";
   const showHoverOverlay = isWeddingDay || isBabyFamily || isMoments;
-  const showGrayscale = isWeddingDay || isMoments;
 
   // --- Lightbox Handlers ---
   const closeLightbox = useCallback(() => {
@@ -105,12 +104,12 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
       )}
 
       {!loading && albums.length > 0 && (
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 md:gap-6 lg:gap-8 px-4 md:px-16 lg:px-24 max-w-[1600px] mx-auto pb-24 space-y-4 md:space-y-6 lg:space-y-8">
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24 space-y-1 md:space-y-2">
           {albums.map((album) => (
             <div
               key={album.id}
               onClick={() => openLightbox(album)}
-              className="group cursor-pointer flex flex-col break-inside-avoid relative"
+              className="group cursor-pointer flex flex-col break-inside-avoid relative mb-1 md:mb-2"
             >
               <div className="overflow-hidden bg-gray-50 relative w-full inline-block">
                 {album.coverImageUrl ? (
@@ -119,7 +118,7 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
                     decoding="async"
                     src={album.coverImageUrl}
                     alt={album.title}
-                    className={`w-full h-auto object-cover block transition-transform duration-1000 group-hover:scale-105 ${showGrayscale ? "grayscale" : ""}`}
+                    className="w-full h-auto object-cover block transition-transform duration-1000 group-hover:scale-105"
                   />
                 ) : (
                   <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
