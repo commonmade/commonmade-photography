@@ -10,6 +10,7 @@ interface GalleryProps {
 export default function Gallery({ category, categorySlug }: GalleryProps) {
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
+  const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
 
   // Lightbox States
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
@@ -104,55 +105,72 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
       )}
 
       {!loading && albums.length > 0 && (
-        <div className="columns-1 sm:columns-2 lg:columns-3 gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24 space-y-1 md:space-y-2">
-          {albums.map((album) => (
-            <div
-              key={album.id}
-              onClick={() => openLightbox(album)}
-              className="group cursor-pointer flex flex-col break-inside-avoid relative mb-1 md:mb-2"
-            >
-              <div className="overflow-hidden bg-gray-50 relative w-full inline-block">
-                {album.coverImageUrl ? (
-                  <img
-                    loading="lazy"
-                    decoding="async"
-                    src={album.coverImageUrl}
-                    alt={album.title}
-                    className="w-full h-auto object-cover block transition-transform duration-1000 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
-                    <span className="text-gray-300 text-xs uppercase tracking-widest">No Cover</span>
-                  </div>
-                )}
+        <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[150px] md:auto-rows-[250px] gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24 grid-flow-row dense">
+          {albums.map((album) => {
+            const ratio = aspectRatios[album.id] || 1;
+            const isLandscape = ratio > 1.2;
 
-                {showHoverOverlay ? (
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-500 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 p-4 text-center">
-                    <h3 className="text-white text-base md:text-lg font-medium tracking-widest uppercase mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+            // Landscape: 넓게 2칸, 높이 2칸 (크게 보임)
+            // Portrait/Square: 넓이 1칸, 높이 2칸 (길게 보임)
+            const spanClass = isLandscape
+              ? "col-span-2 row-span-1 md:row-span-2"
+              : "col-span-1 row-span-1 md:row-span-2";
+
+            return (
+              <div
+                key={album.id}
+                onClick={() => openLightbox(album)}
+                className={`group cursor-pointer flex flex-col relative overflow-hidden bg-gray-50 ${spanClass}`}
+              >
+                <div className="w-full h-full relative">
+                  {album.coverImageUrl ? (
+                    <img
+                      loading="lazy"
+                      decoding="async"
+                      src={album.coverImageUrl}
+                      alt={album.title}
+                      onLoad={(e) => {
+                        const { naturalWidth, naturalHeight } = e.currentTarget;
+                        if (naturalWidth && naturalHeight) {
+                          setAspectRatios(prev => ({ ...prev, [album.id]: naturalWidth / naturalHeight }));
+                        }
+                      }}
+                      className="w-full h-full object-cover block transition-transform duration-1000 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
+                      <span className="text-gray-300 text-xs uppercase tracking-widest">No Cover</span>
+                    </div>
+                  )}
+
+                  {showHoverOverlay ? (
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-500 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 p-4 text-center">
+                      <h3 className="text-white text-base md:text-lg font-medium tracking-widest uppercase mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        {album.title}
+                      </h3>
+                      <p className="text-white/80 text-[10px] md:text-xs tracking-[0.2em] uppercase transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                        {album.location}
+                      </p>
+                      <div className="w-8 h-[1px] bg-white/50 mt-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100"></div>
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500"></div>
+                  )}
+                </div>
+
+                {!showHoverOverlay && (
+                  <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/60 to-transparent p-4 text-center mt-4">
+                    <h3 className="text-sm font-medium tracking-widest uppercase text-white mb-1">
                       {album.title}
                     </h3>
-                    <p className="text-white/80 text-[10px] md:text-xs tracking-[0.2em] uppercase transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
-                      {album.location}
+                    <p className="text-[10px] text-gray-300 tracking-[0.2em] uppercase">
+                      {album.subtitle}
                     </p>
-                    <div className="w-8 h-[1px] bg-white/50 mt-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100"></div>
                   </div>
-                ) : (
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500"></div>
                 )}
               </div>
-
-              {!showHoverOverlay && (
-                <div className="text-center mt-4 mb-2">
-                  <h3 className="text-sm font-medium tracking-widest uppercase text-black mb-1">
-                    {album.title}
-                  </h3>
-                  <p className="text-[10px] text-gray-500 tracking-[0.2em] uppercase">
-                    {album.subtitle}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
