@@ -326,9 +326,8 @@ export default function Contact() {
                   onChange={handleInputChange}
                 >
                   <option value="">Select a category</option>
-                  <option value="wedding">Wedding Day</option>
-                  <option value="baby">Baby &amp; Family</option>
-                  <option value="moments">Moments</option>
+                  <option value="portfolio">Portfolio</option>
+                  <option value="venue">Venue</option>
                   <option value="other">Other</option>
                 </select>
               </div>

@@ -1,104 +1,98 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { getMainSlides, type MainSlide } from "../lib/firestoreService";
+import { getHomeContent, type HomeContent } from "../lib/firestoreService";
 
-const fallbackImages = [
-  "https://picsum.photos/seed/home1/1600/990",
-  "https://picsum.photos/seed/home2/1600/990",
-  "https://picsum.photos/seed/home3/1600/990",
-];
+const DEFAULT_CONTENT: HomeContent = {
+  quote: "",
+  body: "",
+  closing1: "",
+  closing2: "",
+  imageUrl: "",
+};
 
 export default function Home() {
-  const [slides, setSlides] = useState<string[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [content, setContent] = useState<HomeContent>(DEFAULT_CONTENT);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getMainSlides()
-      .then((data: MainSlide[]) => {
-        if (data.length > 0) {
-          setSlides(data.map((s) => s.url));
-        } else {
-          setSlides(fallbackImages);
-        }
-      })
-      .catch(() => setSlides(fallbackImages))
+    getHomeContent()
+      .then(setContent)
       .finally(() => setLoading(false));
   }, []);
 
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-  };
-
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
-  };
-
-  useEffect(() => {
-    if (slides.length === 0) return;
-    const timer = setInterval(nextSlide, 2000);
-    return () => clearInterval(timer);
-  }, [slides.length]);
-
-  if (loading || slides.length === 0) {
+  if (loading) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+      <div className="w-full flex items-center justify-center py-32">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const hasContent = content.quote || content.body || content.imageUrl;
+
+  if (!hasContent) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center py-32 text-center">
+        <p className="text-gray-300 text-sm tracking-widest uppercase">아직 홈 내용이 없습니다</p>
+        <p className="text-gray-400 text-xs mt-2">관리자 페이지에서 내용을 입력해주세요</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full relative flex items-center justify-center overflow-hidden animate-in fade-in duration-1000 bg-white">
-      <div className="w-full h-full relative flex items-center justify-center bg-white">
-        {slides.map((img, index) => {
-          let position = "translate-x-[150%] opacity-0 scale-90";
-          let zIndex = 0;
+    <div className="w-full animate-in fade-in duration-700">
+      <div className="flex flex-col md:flex-row gap-12 md:gap-16 lg:gap-24 items-center">
+        {/* Left: Text Content */}
+        <div className="flex-1 flex flex-col items-center text-center py-4 md:py-8">
+          {content.quote && (
+            <h2 className="text-lg md:text-xl lg:text-2xl font-light text-gray-800 mb-6 md:mb-8 leading-relaxed tracking-tight">
+              "{content.quote}"
+            </h2>
+          )}
 
-          if (index === currentIndex) {
-            position = "translate-x-0 opacity-100 scale-100";
-            zIndex = 20;
-          } else if (index === (currentIndex - 1 + slides.length) % slides.length) {
-            position = "-translate-x-[102.5%] opacity-60 scale-95";
-            zIndex = 10;
-          } else if (index === (currentIndex + 1) % slides.length) {
-            position = "translate-x-[102.5%] opacity-60 scale-95";
-            zIndex = 10;
-          }
-
-          return (
-            <div
-              key={index}
-              className={`absolute w-[95%] md:w-[75%] lg:w-[65%] h-full transition-all duration-700 ease-in-out flex items-center justify-center ${position}`}
-              style={{ zIndex }}
-            >
-              <img
-                loading="lazy"
-                decoding="async"
-                src={img}
-                alt={`Slide ${index + 1}`}
-                className="w-full h-full object-cover md:object-contain"
-              />
+          {content.body && (
+            <div className="space-y-2 mb-8">
+              {content.body.split("\n").map((line, i) =>
+                line.trim() ? (
+                  <p
+                    key={i}
+                    className="text-[13px] md:text-sm text-gray-600 leading-relaxed tracking-wide"
+                    dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }}
+                  />
+                ) : (
+                  <div key={i} className="h-1.5" />
+                )
+              )}
             </div>
-          );
-        })}
+          )}
+
+          {(content.closing1 || content.closing2) && (
+            <div className="mt-6 pt-6 border-t border-gray-100 w-full max-w-sm">
+              {content.closing1 && (
+                <p className="text-sm md:text-base text-gray-700 leading-relaxed tracking-tight">
+                  {content.closing1}
+                </p>
+              )}
+              {content.closing2 && (
+                <p className="text-sm md:text-lg font-medium text-gray-900 mt-2 leading-relaxed tracking-tight">
+                  {content.closing2}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Image */}
+        {content.imageUrl && (
+          <div className="w-full md:w-[45%] lg:w-[42%] flex-shrink-0">
+            <img
+              src={content.imageUrl}
+              alt="Home visual"
+              className="w-full h-auto object-cover"
+              style={{ maxHeight: "75vh" }}
+            />
+          </div>
+        )}
       </div>
-
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 md:left-12 z-30 bg-white/80 hover:bg-white p-3 md:p-4 transition-colors duration-300 shadow-sm"
-        aria-label="Previous slide"
-      >
-        <ArrowLeft size={20} className="text-black" />
-      </button>
-
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 md:right-12 z-30 bg-white/80 hover:bg-white p-3 md:p-4 transition-colors duration-300 shadow-sm"
-        aria-label="Next slide"
-      >
-        <ArrowRight size={20} className="text-black" />
-      </button>
     </div>
   );
 }

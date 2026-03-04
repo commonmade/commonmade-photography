@@ -32,7 +32,36 @@ h6 {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Override Swiper default overflow hidden to allow peeking slides */
+.swiper {
+  overflow: visible !important;
+}
+
+/* Force Slide width to allow peeking effect despite Swiper inline styles */
+.swiper-slide {
+  width: 95% !important;
+}
+
+@media (min-width: 640px) {
+  .swiper-slide {
+    width: 90% !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .swiper-slide {
+    width: 85% !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .swiper-slide {
+    width: 75% !important;
+  }
 }

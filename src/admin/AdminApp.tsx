@@ -12,6 +12,7 @@ import FaqManager from "./pages/FaqManager";
 import ContactManager from "./pages/ContactManager";
 import ProductManager from "./pages/ProductManager";
 import InquiryManager from "./pages/InquiryManager";
+import HomeManager from "./pages/HomeManager";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null | "loading">("loading");
@@ -45,9 +46,12 @@ export default function AdminApp() {
                     </ProtectedRoute>
                 }
             >
-                <Route index element={<Navigate to="/admin/gallery" replace />} />
+                <Route index element={<Navigate to="/admin/portfolio" replace />} />
+                <Route path="portfolio" element={<GalleryManager category="portfolio" title="Portfolio 관리" />} />
+                <Route path="venue" element={<GalleryManager category="venue" title="Venue 관리" />} />
                 <Route path="gallery" element={<GalleryManager />} />
                 <Route path="slides" element={<SlideManager />} />
+                <Route path="home-manager" element={<HomeManager />} />
                 <Route path="faq" element={<FaqManager />} />
                 <Route path="contact-manager" element={<ContactManager />} />
                 <Route path="inquiry-manager" element={<InquiryManager />} />

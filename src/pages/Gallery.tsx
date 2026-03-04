@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getAlbumsByCategory, getPhotosByAlbum, type Album, type Photo } from "../lib/firestoreService";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 
@@ -9,39 +9,71 @@ interface GalleryProps {
 
 export default function Gallery({ category, categorySlug }: GalleryProps) {
   const [albums, setAlbums] = useState<Album[]>([]);
+  const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
 
-  // Lightbox States
+  // Album Detail View States (For non-portfolio categories like Venue)
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [lightboxPhotos, setLightboxPhotos] = useState<Photo[]>([]);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [lightboxLoading, setLightboxLoading] = useState(false);
+
+  // Fullscreen Photo Lightbox States
+  const [fullscreenPhotoIndex, setFullscreenPhotoIndex] = useState<number | null>(null);
+
+  // Mobile Touch Hover State
+  const [activeMobileId, setActiveMobileId] = useState<string | null>(null);
+
+  const isPortfolio = categorySlug === "portfolio";
 
   useEffect(() => {
     setLoading(true);
     getAlbumsByCategory(categorySlug)
-      .then(setAlbums)
+      .then(async (fetchedAlbums) => {
+        setAlbums(fetchedAlbums);
+
+        // If portfolio, aggregate all photos into one view
+        if (categorySlug === "portfolio") {
+          const photoPromises = fetchedAlbums.map(album => getPhotosByAlbum(album.id));
+          const photosArrays = await Promise.all(photoPromises);
+          // Flatten and sort by original album order/created if possible, 
+          // but for now just flatten
+          const flatPhotos = photosArrays.flat();
+          setAllPhotos(flatPhotos);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [categorySlug]);
 
-  const isWeddingDay = categorySlug === "wedding-day";
-  const isBabyFamily = categorySlug === "baby-family";
-  const isMoments = categorySlug === "moments";
-  const showHoverOverlay = isWeddingDay || isBabyFamily || isMoments;
+  // --- Click Handlers ---
+  const handleAlbumClick = (e: React.MouseEvent, album: Album) => {
+    e.stopPropagation();
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isTouch) {
+      if (activeMobileId !== album.id) {
+        setActiveMobileId(album.id);
+        return;
+      }
+    }
+    openDetailView(album);
+  };
 
-  // --- Lightbox Handlers ---
-  const closeLightbox = useCallback(() => {
-    setSelectedAlbum(null);
-    setLightboxIndex(null);
-    setLightboxPhotos([]);
+  useEffect(() => {
+    const handleGlobalClick = () => setActiveMobileId(null);
+    window.addEventListener('click', handleGlobalClick);
+    return () => window.removeEventListener('click', handleGlobalClick);
   }, []);
 
-  const openLightbox = async (album: Album) => {
+  // --- Detail View Handlers ---
+  const closeDetailView = useCallback(() => {
+    setSelectedAlbum(null);
+    setLightboxPhotos([]);
+    setActiveMobileId(null);
+  }, []);
+
+  const openDetailView = async (album: Album) => {
     setSelectedAlbum(album);
     setLightboxLoading(true);
-    setLightboxIndex(0); // Show loading spinner initially
     try {
       const photos = await getPhotosByAlbum(album.id);
       setLightboxPhotos(photos);
@@ -52,40 +84,41 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
     }
   };
 
-  const nextSlide = useCallback(() => {
-    setLightboxIndex((prev) =>
-      prev === null ? null : (prev + 1) % lightboxPhotos.length
-    );
-  }, [lightboxPhotos.length]);
+  // --- Fullscreen Lightbox Handlers ---
+  const closeFullscreen = () => setFullscreenPhotoIndex(null);
 
-  const prevSlide = useCallback(() => {
-    setLightboxIndex((prev) =>
-      prev === null ? null : (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length
-    );
-  }, [lightboxPhotos.length]);
+  const currentPhotoSet = isPortfolio ? allPhotos : lightboxPhotos;
 
-  // Slideshow timer
-  useEffect(() => {
-    if (lightboxIndex === null || lightboxPhotos.length === 0) return;
-    const timer = setInterval(nextSlide, 4000);
-    return () => clearInterval(timer);
-  }, [lightboxIndex, lightboxPhotos.length, nextSlide]);
+  const nextFullscreen = useCallback(() => {
+    setFullscreenPhotoIndex((prev) =>
+      prev === null ? null : (prev + 1) % currentPhotoSet.length
+    );
+  }, [currentPhotoSet.length]);
+
+  const prevFullscreen = useCallback(() => {
+    setFullscreenPhotoIndex((prev) =>
+      prev === null ? null : (prev - 1 + currentPhotoSet.length) % currentPhotoSet.length
+    );
+  }, [currentPhotoSet.length]);
 
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (lightboxIndex === null) return;
-      if (e.key === "Escape") closeLightbox();
-      if (e.key === "ArrowRight") nextSlide();
-      if (e.key === "ArrowLeft") prevSlide();
+      if (fullscreenPhotoIndex !== null) {
+        if (e.key === "Escape") closeFullscreen();
+        if (e.key === "ArrowRight") nextFullscreen();
+        if (e.key === "ArrowLeft") prevFullscreen();
+      } else if (selectedAlbum !== null) {
+        if (e.key === "Escape") closeDetailView();
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxIndex, nextSlide, prevSlide, closeLightbox]);
+  }, [fullscreenPhotoIndex, selectedAlbum, nextFullscreen, prevFullscreen, closeDetailView]);
 
   return (
-    <div className="w-full animate-in fade-in duration-1000">
-      <div className="text-center mb-16 md:mb-24">
+    <div className="w-full animate-in fade-in duration-1000" onClick={() => setActiveMobileId(null)}>
+      <div className="text-center mb-16 md:mb-24 px-4">
         <h2 className="logo-font text-sm md:text-lg tracking-widest uppercase font-light text-black">
           {category}
         </h2>
@@ -98,152 +131,204 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
         </div>
       )}
 
-      {!loading && albums.length === 0 && (
-        <div className="text-center py-32 text-gray-400 text-sm tracking-widest uppercase">
-          No albums yet
-        </div>
-      )}
+      {/* Portfolio View (Responsive: 4-item Desktop Justified / 2-column Mobile Portrait) */}
+      {!loading && isPortfolio && (
+        <div className="px-0 w-full pb-24">
+          {allPhotos.length === 0 ? (
+            <div className="text-center py-32 text-gray-400 text-sm tracking-widest uppercase">
+              No photos in portfolio yet
+            </div>
+          ) : (
+            <>
+              {/* Desktop View: Fixed 4-item justified rows */}
+              <div className="hidden md:flex flex-col gap-1 px-1">
+                {Array.from({ length: Math.ceil(allPhotos.length / 4) }).map((_, rowIndex) => (
+                  <div key={rowIndex} className="flex gap-1 w-full">
+                    {allPhotos.slice(rowIndex * 4, rowIndex * 4 + 4).map((photo: Photo, i: number) => (
+                      <PortfolioItem
+                        key={photo.id}
+                        photo={photo}
+                        onOpenLightbox={() => setFullscreenPhotoIndex(rowIndex * 4 + i)}
+                      />
+                    ))}
+                    {/* Placeholder for last row if fewer than 4 items */}
+                    {allPhotos.slice(rowIndex * 4, rowIndex * 4 + 4).length < 4 && (
+                      <div className="flex-grow-[10] h-[380px]"></div>
+                    )}
+                  </div>
+                ))}
+              </div>
 
-      {!loading && albums.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-[150px] md:auto-rows-[250px] gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24 grid-flow-row dense">
-          {albums.map((album) => {
-            const ratio = aspectRatios[album.id] || 1;
-            const isLandscape = ratio > 1.2;
-
-            // Landscape: 넓게 2칸, 높이 2칸 (크게 보임)
-            // Portrait/Square: 넓이 1칸, 높이 2칸 (길게 보임)
-            const spanClass = isLandscape
-              ? "col-span-2 row-span-1 md:row-span-2"
-              : "col-span-1 row-span-1 md:row-span-2";
-
-            return (
-              <div
-                key={album.id}
-                onClick={() => openLightbox(album)}
-                className={`group cursor-pointer flex flex-col relative overflow-hidden bg-gray-50 ${spanClass}`}
-              >
-                <div className="w-full h-full relative">
-                  {album.coverImageUrl ? (
+              {/* Mobile View: 1-column Stack (Original aspect ratio) */}
+              <div className="flex flex-col md:hidden gap-0">
+                {allPhotos.map((photo: Photo, i: number) => (
+                  <div
+                    key={photo.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFullscreenPhotoIndex(i);
+                    }}
+                    className="relative w-full overflow-hidden bg-gray-50 cursor-zoom-in"
+                  >
                     <img
                       loading="lazy"
-                      decoding="async"
-                      src={album.coverImageUrl}
-                      alt={album.title}
-                      onLoad={(e) => {
-                        const { naturalWidth, naturalHeight } = e.currentTarget;
-                        if (naturalWidth && naturalHeight) {
-                          setAspectRatios(prev => ({ ...prev, [album.id]: naturalWidth / naturalHeight }));
-                        }
-                      }}
-                      className="w-full h-full object-cover block transition-transform duration-1000 group-hover:scale-105"
+                      src={photo.url}
+                      alt=""
+                      className="w-full h-auto block"
                     />
-                  ) : (
-                    <div className="w-full aspect-square bg-gray-100 flex items-center justify-center">
-                      <span className="text-gray-300 text-xs uppercase tracking-widest">No Cover</span>
-                    </div>
-                  )}
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
-                  {showHoverOverlay ? (
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors duration-500 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 p-4 text-center">
-                      <h3 className="text-white text-base md:text-lg font-medium tracking-widest uppercase mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+      {/* Venue/Other Categories View (Album Grid) */}
+      {!loading && !isPortfolio && (
+        <div className="grid grid-cols-2 gap-2 md:gap-6 px-4 md:px-0 max-w-5xl mx-auto pb-32">
+          {albums.length === 0 ? (
+            <div className="text-center py-32 text-gray-400 text-sm tracking-widest uppercase col-span-2">
+              No albums yet
+            </div>
+          ) : (
+            albums.map((album) => {
+              const isMobileActive = activeMobileId === album.id;
+              const bgOverlayClass = isMobileActive
+                ? "bg-black/60 opacity-100"
+                : "bg-black/0 opacity-0 lg:group-hover:bg-black/60 lg:group-hover:opacity-100";
+              const transformClass = isMobileActive
+                ? "translate-y-0"
+                : "translate-y-4 lg:group-hover:translate-y-0";
+
+              return (
+                <div
+                  key={album.id}
+                  onClick={(e) => handleAlbumClick(e, album)}
+                  className="group cursor-pointer relative overflow-hidden bg-gray-50 aspect-[3/4]"
+                >
+                  <div className="w-full h-full relative">
+                    {album.coverImageUrl ? (
+                      <img
+                        loading="lazy"
+                        src={album.coverImageUrl}
+                        alt={album.title}
+                        className="w-full h-full object-cover block transition-transform duration-1000 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                        <span className="text-gray-300 text-xs uppercase tracking-widest">No Cover</span>
+                      </div>
+                    )}
+                    <div className={`absolute inset-0 transition-all duration-500 flex flex-col items-center justify-center p-4 text-center ${bgOverlayClass}`}>
+                      <h3 className={`text-white text-base md:text-lg font-medium tracking-widest uppercase mb-2 transform transition-transform duration-500 ${transformClass}`}>
                         {album.title}
                       </h3>
-                      <p className="text-white/80 text-[10px] md:text-xs tracking-[0.2em] uppercase transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
+                      <p className={`text-white/80 text-[10px] md:text-xs tracking-[0.2em] uppercase transform transition-transform duration-500 delay-75 ${transformClass}`}>
                         {album.location}
                       </p>
-                      <div className="w-8 h-[1px] bg-white/50 mt-4 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-100"></div>
+                      <div className={`w-8 h-[1px] bg-white/50 mt-4 transform transition-transform duration-500 delay-100 ${transformClass}`}></div>
                     </div>
-                  ) : (
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-500"></div>
-                  )}
-                </div>
-
-                {!showHoverOverlay && (
-                  <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/60 to-transparent p-4 text-center mt-4">
-                    <h3 className="text-sm font-medium tracking-widest uppercase text-white mb-1">
-                      {album.title}
-                    </h3>
-                    <p className="text-[10px] text-gray-300 tracking-[0.2em] uppercase">
-                      {album.subtitle}
-                    </p>
                   </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Lightbox Overlay */}
-      {selectedAlbum !== null && (
-        <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in fade-in duration-300">
-
-          {/* Lightbox Header / Controls */}
-          <div className="absolute top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-[110] bg-gradient-to-b from-white w-full">
-            <div className="flex flex-col">
-              <h3 className="logo-font text-lg md:text-xl tracking-widest uppercase text-black">
-                {selectedAlbum.title}
-              </h3>
-              {selectedAlbum.location && (
-                <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase mt-1">
-                  {selectedAlbum.location}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={closeLightbox}
-              className="p-2 text-black hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Close Lightbox"
-            >
-              <X size={28} strokeWidth={1.5} />
-            </button>
-          </div>
-
-          {/* Lightbox Content Zone */}
-          <div
-            className="flex-1 w-full h-full relative flex items-center justify-center pt-20 pb-4 md:py-20 px-4 md:px-16"
-            onClick={closeLightbox}
-          >
-            {lightboxLoading ? (
-              <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            ) : lightboxPhotos.length === 0 ? (
-              <div className="text-gray-400 text-sm tracking-widest uppercase">No photos in this album</div>
-            ) : lightboxIndex !== null ? (
-              <>
-                {/* Left / Right Nav Buttons */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); prevSlide(); }}
-                  className="absolute left-2 md:left-8 z-[110] p-3 text-black hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <ArrowLeft size={28} strokeWidth={1} />
-                </button>
-
-                <img
-                  loading="lazy"
-                  decoding="async"
-                  key={lightboxIndex}
-                  src={lightboxPhotos[lightboxIndex].url}
-                  alt={`Slide ${lightboxIndex + 1}`}
-                  className="max-w-full max-h-[85vh] object-contain shadow-sm animate-in fade-in zoom-in-95 duration-500"
-                  onClick={(e) => e.stopPropagation()}
-                />
-
-                <button
-                  onClick={(e) => { e.stopPropagation(); nextSlide(); }}
-                  className="absolute right-2 md:right-8 z-[110] p-3 text-black hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <ArrowRight size={28} strokeWidth={1} />
-                </button>
-
-                {/* Counter */}
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] tracking-widest text-gray-400 font-light">
-                  {lightboxIndex + 1} / {lightboxPhotos.length}
                 </div>
-              </>
-            ) : null}
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {/* Album Detail Scroll View Overlay (For non-Portfolio) */}
+      {selectedAlbum !== null && (
+        <div className="fixed inset-0 z-[100] bg-white flex flex-col overflow-y-auto animate-in fade-in duration-300">
+          <div className="sticky top-0 left-0 w-full p-4 md:p-6 flex justify-between items-center z-[110] bg-white/95 backdrop-blur-sm shadow-sm">
+            <div className="flex flex-col">
+              <h3 className="logo-font text-lg md:text-xl tracking-widest uppercase text-black">{selectedAlbum.title}</h3>
+              {selectedAlbum.location && <p className="text-[10px] text-gray-400 tracking-[0.2em] uppercase mt-1">{selectedAlbum.location}</p>}
+            </div>
+            <button onClick={closeDetailView} className="p-2 text-black hover:bg-gray-100 rounded-full transition-colors"><X size={28} strokeWidth={1.5} /></button>
+          </div>
+          <div className="flex-1 w-full pt-8 pb-32 px-4 md:px-8 max-w-[1200px] mx-auto min-h-screen">
+            {lightboxLoading ? (
+              <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
+            ) : (
+              <div className="columns-1 md:columns-2 gap-[2px] md:gap-[6px] cursor-zoom-in w-full max-w-5xl mx-auto">
+                {lightboxPhotos.map((photo, i) => (
+                  <img
+                    key={photo.id}
+                    loading="lazy"
+                    src={photo.url}
+                    alt=""
+                    onClick={(e) => { e.stopPropagation(); setFullscreenPhotoIndex(i); }}
+                    className="w-full h-auto object-cover mb-[2px] md:mb-[6px] shadow-sm bg-gray-50 hover:opacity-95 transition-opacity duration-300 break-inside-avoid"
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* Fullscreen Photo Lightbox (Unified for both Portfolio and Albums) */}
+      {fullscreenPhotoIndex !== null && currentPhotoSet[fullscreenPhotoIndex] && (
+        <div className="fixed inset-0 z-[150] bg-white/70 backdrop-blur-sm flex flex-col animate-in fade-in duration-300" onClick={closeFullscreen}>
+          <button onClick={(e) => { e.stopPropagation(); closeFullscreen(); }} className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center justify-center w-[44px] h-[34px] text-black border border-black/80 hover:bg-black/5 rounded-sm transition-all z-[160]"><X size={26} strokeWidth={1.2} /></button>
+
+          <div className="absolute top-0 left-0 w-1/4 h-full z-[155] cursor-w-resize flex items-center justify-start group" onClick={(e) => { e.stopPropagation(); prevFullscreen(); }}>
+            <button className="p-4 text-black/20 lg:group-hover:text-black/60 transition-colors ml-2 md:ml-6"><ArrowLeft size={36} strokeWidth={1.5} /></button>
+          </div>
+          <div className="absolute top-0 right-0 w-1/4 h-full z-[155] cursor-e-resize flex items-center justify-end group" onClick={(e) => { e.stopPropagation(); nextFullscreen(); }}>
+            <button className="p-4 text-black/20 lg:group-hover:text-black/60 transition-colors mr-2 md:mr-6"><ArrowRight size={36} strokeWidth={1.5} /></button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center p-6 md:p-12 w-full h-full">
+            <img
+              key={fullscreenPhotoIndex}
+              src={currentPhotoSet[fullscreenPhotoIndex].url}
+              alt=""
+              className="max-w-[90vw] md:max-w-[85vw] max-h-[85vh] object-contain select-none shadow-sm animate-in zoom-in-95 duration-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-black/40 text-[10px] tracking-[0.2em] font-light">
+            {fullscreenPhotoIndex + 1} / {currentPhotoSet.length}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface PortfolioItemProps {
+  photo: Photo;
+  onOpenLightbox: () => void;
+  key?: React.Key;
+}
+
+function PortfolioItem({ photo, onOpenLightbox }: PortfolioItemProps) {
+  const [aspectRatio, setAspectRatio] = useState<number>(1);
+
+  return (
+    <div
+      className="relative group cursor-zoom-in overflow-hidden bg-gray-50 h-[300px] md:h-[380px]"
+      style={{
+        flexGrow: aspectRatio,
+        flexBasis: `${aspectRatio * 300}px`
+      }}
+      onClick={onOpenLightbox}
+    >
+      <img
+        loading="lazy"
+        src={photo.url}
+        alt=""
+        onLoad={(e) => {
+          const img = e.target as HTMLImageElement;
+          if (img.naturalHeight > 0) {
+            setAspectRatio(img.naturalWidth / img.naturalHeight);
+          }
+        }}
+        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
     </div>
   );
 }

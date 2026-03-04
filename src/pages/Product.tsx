@@ -5,6 +5,7 @@ export default function Product() {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [policies, setPolicies] = useState<PolicySection[]>([]);
   const [guidePolicyTitle, setGuidePolicyTitle] = useState("추가옵션 & 촬영안내");
+  const [introText, setIntroText] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,6 +19,7 @@ export default function Product() {
           fetchedTitle = "추가옵션 & 촬영안내";
         }
         setGuidePolicyTitle(fetchedTitle);
+        setIntroText(String(pageData.introText || ""));
       })
       .catch(() => { })
       .finally(() => setLoading(false));
@@ -38,44 +40,41 @@ export default function Product() {
           PRODUCT
         </h2>
         <div className="w-12 h-[1px] bg-gray-300 mx-auto mt-8"></div>
-        <p className="mt-8 text-sm text-gray-500 uppercase tracking-widest max-w-2xl mx-auto leading-relaxed">
-          상품구성
-        </p>
       </div>
+
+      {introText && (
+        <div className="max-w-6xl mx-auto px-4 md:px-0 w-full mb-16 md:mb-20 text-left">
+          <div className="md:w-2/3 lg:w-1/2">
+            <p className="text-[13px] md:text-[14px] text-gray-800 leading-[2.6] whitespace-pre-line tracking-wide font-serif break-keep">
+              {introText}
+            </p>
+          </div>
+        </div>
+      )}
 
       {products.length === 0 ? (
         <p className="text-center text-sm text-gray-400 py-20">
           상품 정보가 없습니다. 관리자에서 상품을 추가해주세요.
         </p>
       ) : (
-        <div className="space-y-16 md:space-y-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 lg:gap-x-12 gap-y-16 max-w-6xl mx-auto px-4 md:px-0 w-full mt-12 md:mt-24">
           {products.map((product) => (
-            <div
-              key={product.id}
-              className="border-t border-gray-100 pt-12 grid grid-cols-1 md:grid-cols-2 gap-0 md:divide-x md:divide-gray-200"
-            >
-              {/* Left — 부제목 + 제목 + 가격 */}
-              <div className="md:pr-12 mb-8 md:mb-0">
-                {product.subtitle && (
-                  <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-2">
-                    {product.subtitle}
-                  </p>
-                )}
-                <h3 className="logo-font text-sm md:text-base tracking-widest uppercase font-light text-black mb-6">
+            <div key={product.id} className="flex flex-col text-left">
+              <div className="flex items-baseline gap-1.5 mb-4">
+                <h3 className="text-[15px] font-serif text-gray-800 tracking-wider">
                   {product.name}
                 </h3>
                 {product.price && (
-                  <span className="inline-block text-xs font-medium uppercase tracking-[0.12em] text-black border-b border-gray-300 pb-1.5">
-                    {product.price}
+                  <span className="text-[15px] font-serif text-gray-800 tracking-wider">
+                    ({product.price})
                   </span>
                 )}
               </div>
 
-              {/* Right — 상세 내용 */}
-              <div className="md:pl-12">
-                <p className="text-sm text-gray-500 leading-loose whitespace-pre-line">
-                  {product.description}
-                </p>
+              <div className="w-full h-[1px] bg-gray-300 mb-8" />
+
+              <div className="text-[13px] text-gray-600 leading-[2.4] whitespace-pre-line break-keep font-light">
+                {product.description}
               </div>
             </div>
           ))}

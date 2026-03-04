@@ -113,8 +113,30 @@ function ProductsTab() {
     const [seeding, setSeeding] = useState(false);
     const [showNew, setShowNew] = useState(false);
 
-    const load = useCallback(async () => { setLoading(true); setProducts(await getProducts()); setLoading(false); }, []);
+    // Intro Text state
+    const [introText, setIntroText] = useState("");
+    const [introSaving, setIntroSaving] = useState(false);
+    const [introSaved, setIntroSaved] = useState(false);
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        const [fetchedProducts, pageData] = await Promise.all([
+            getProducts(),
+            getPageContent("product")
+        ]);
+        setProducts(fetchedProducts);
+        setIntroText(String(pageData.introText || ""));
+        setLoading(false);
+    }, []);
     useEffect(() => { load(); }, [load]);
+
+    const handleSaveIntro = async () => {
+        setIntroSaving(true);
+        await updatePageContent("product", { introText: introText });
+        setIntroSaving(false);
+        setIntroSaved(true);
+        setTimeout(() => setIntroSaved(false), 2000);
+    };
 
     const handleSeedDefaults = async () => {
         if (!confirm("기본 상품 목록을 Firestore에 추가하시겠습니까?")) return;
@@ -139,6 +161,31 @@ function ProductsTab() {
 
     return (
         <div>
+            {/* Intro Text Editor */}
+            <div className="mb-12 p-6 border border-gray-200 rounded-xl bg-gray-50/50">
+                <div className="flex items-center justify-between mb-4">
+                    <label className="text-[11px] font-medium uppercase tracking-widest text-black">상품 안내문 (상단 문구)</label>
+                    {introSaved && <span className="text-[10px] text-green-600 uppercase tracking-widest">저장 완료 ✓</span>}
+                </div>
+                <textarea
+                    rows={5}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors resize-none font-mono leading-relaxed mb-4"
+                    value={introText}
+                    onChange={(e) => setIntroText(e.target.value)}
+                    placeholder="상품 페이지 상단에 표시될 안내 문구를 입력하세요. (줄바꿈이 화면에 그대로 표시됩니다.)"
+                />
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleSaveIntro}
+                        disabled={introSaving}
+                        className="flex items-center gap-2 bg-black text-white px-6 py-2 text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-40"
+                    >
+                        {introSaving ? <Loader size={12} className="animate-spin" /> : <Check size={12} />}
+                        {introSaving ? "저장 중..." : "안내문 저장"}
+                    </button>
+                </div>
+            </div>
+
             <div className="flex items-center gap-3 mb-8">
                 <button onClick={() => setShowNew((v) => !v)} className="flex items-center gap-2 text-xs bg-black text-white px-4 py-2 uppercase tracking-widest hover:bg-gray-800 transition-colors">
                     <Plus size={13} /> 새 상품 추가

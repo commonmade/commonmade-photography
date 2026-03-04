@@ -1,11 +1,13 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
-import { Images, Settings, LogOut, Camera, Monitor, HelpCircle, Mail, MailOpen, Package } from "lucide-react";
+import { Images, Settings, LogOut, Camera, Monitor, HelpCircle, Mail, MailOpen, Package, Home } from "lucide-react";
 
 const navItems = [
-    { to: "/admin/gallery", label: "갤러리 관리", icon: Images },
+    { to: "/admin/portfolio", label: "Portfolio 관리", icon: Images },
+    { to: "/admin/venue", label: "Venue 관리", icon: Images },
     { to: "/admin/slides", label: "메인 슬라이드", icon: Monitor },
+    { to: "/admin/home-manager", label: "About Us 관리", icon: Home },
     { to: "/admin/faq", label: "FAQ 관리", icon: HelpCircle },
     { to: "/admin/contact-manager", label: "Contact 관리", icon: Mail },
     { to: "/admin/inquiry-manager", label: "문의 접수내역", icon: MailOpen },

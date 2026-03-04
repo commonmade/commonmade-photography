@@ -424,12 +424,11 @@ export async function updateMainSlideOrder(id: string, order: number): Promise<v
 // ─── Seed Data ─────────────────────────────────────────────────────────────
 
 export async function seedInitialData(): Promise<void> {
-    const cats = [
-        { id: "wedding", name: "Wedding Day", slug: "wedding-day", order: 0 },
-        { id: "baby", name: "Baby & Family", slug: "baby-family", order: 1 },
-        { id: "moments", name: "Moments", slug: "moments", order: 2 },
+    const categoriesBatch = [
+        { id: "portfolio", name: "Portfolio", slug: "portfolio", order: 0 },
+        { id: "venue", name: "Venue", slug: "venue", order: 1 }
     ];
-    for (const cat of cats) {
+    for (const cat of categoriesBatch) {
         const { id, ...data } = cat;
         await setDoc(doc(db, "categories", id), data);
     }
@@ -449,3 +448,56 @@ export async function seedInitialData(): Promise<void> {
         }
     }
 }
+
+// ─── Home Content ───────────────────────────────────────────────────────────
+
+export interface HomeContent {
+    quote: string;
+    body: string;
+    closing1: string;
+    closing2: string;
+    imageUrl: string;
+}
+
+export async function getHomeContent(): Promise<HomeContent> {
+    const snap = await getDoc(doc(db, "pageContents", "home"));
+    if (!snap.exists()) {
+        return {
+            quote: "",
+            body: "",
+            closing1: "",
+            closing2: "",
+            imageUrl: "",
+        };
+    }
+    return snap.data() as HomeContent;
+}
+
+export async function updateHomeContent(data: Partial<HomeContent>): Promise<void> {
+    await setDoc(doc(db, "pageContents", "home"), data, { merge: true });
+}
+
+export async function uploadHomeImage(
+    file: File,
+    onProgress?: (progress: number) => void
+): Promise<string> {
+    const filename = `${Date.now()}_${file.name}`;
+    const storageRef = ref(storage, `homeContent/${filename}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+
+    return new Promise((resolve, reject) => {
+        uploadTask.on(
+            "state_changed",
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                onProgress?.(progress);
+            },
+            reject,
+            async () => {
+                const url = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(url);
+            }
+        );
+    });
+}
+

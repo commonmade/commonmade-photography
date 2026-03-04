@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { Menu, X, Instagram } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import KakaoChatButton from "./KakaoChatButton";
 import { useState, useEffect } from "react";
 import { getSiteConfig } from "../lib/firestoreService";
@@ -36,9 +36,9 @@ function KakaoIcon({ size = 20 }: { size?: number }) {
 }
 
 const navLinks = [
-  { name: "Wedding Day", hoverName: "결혼", path: "/wedding-day" },
-  { name: "Baby&Family", hoverName: "아기&가족", path: "/baby-family" },
-  { name: "Moments", hoverName: "행사", path: "/moments" },
+  { name: "ABOUT US", hoverName: "ABOUT US", path: "/about" },
+  { name: "Portfolio", hoverName: "본식 스냅", path: "/portfolio" },
+  { name: "Venue", hoverName: "장소", path: "/venue" },
   { name: "Product", hoverName: "상품구성", path: "/product" },
   { name: "F&Q", hoverName: "자주묻는질문", path: "/faq" },
   { name: "Contact", hoverName: "연락", path: "/contact" },
@@ -79,10 +79,7 @@ export default function Layout() {
   }, []);
 
   return (
-    <div
-      className={`flex flex-col bg-white min-h-screen ${location.pathname === "/" ? "h-screen overflow-hidden" : ""}`}
-      style={location.pathname === "/" ? { paddingTop: 0 } : undefined}
-    >
+    <div className="flex flex-col bg-white min-h-screen">
       {/* Header */}
       <header
         className={`w-full px-6 md:px-12 flex flex-col items-center justify-center relative z-40 transition-all duration-300 fixed top-0 bg-white/90 backdrop-blur-md shadow-sm ${isScrolled ? "py-2" : "py-4 md:py-6"
@@ -115,7 +112,7 @@ export default function Layout() {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center justify-center w-full relative max-w-6xl mx-auto">
-          <nav className="flex items-center justify-center space-x-8 lg:space-x-12">
+          <nav className="flex items-center justify-center space-x-8 lg:space-x-12 mt-8">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
@@ -167,33 +164,12 @@ export default function Layout() {
             ))}
           </div>
 
-          <div className="flex items-center space-x-6 mt-8 pt-8 border-t border-gray-100 w-1/2 justify-center">
-            <a
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-black transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram size={24} />
-            </a>
-            <a
-              href={kakaoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-black transition-colors"
-              aria-label="KakaoTalk Channel"
-            >
-              <KakaoIcon size={29} />
-            </a>
-          </div>
+
         </div>
       )}
 
       {/* Main Content */}
-      <main
-        className={`w-full max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 ${location.pathname === "/" ? "flex-1 flex flex-col justify-center min-h-0" : "flex-grow pt-8 pb-24"}`}
-      >
+      <main className={`w-full flex-grow ${location.pathname === "/" || location.pathname === "/portfolio" ? "px-0 max-w-none pt-0 mt-8 pb-8" : "max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 pt-8 pb-24"}`}>
         <Outlet />
       </main>
 
@@ -204,26 +180,7 @@ export default function Layout() {
         <footer
           className={`w-full max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 border-t border-gray-200 flex flex-col items-center justify-center ${location.pathname === "/" ? "py-3 space-y-2" : "py-12 space-y-6"}`}
         >
-          <div className="flex items-center space-x-4">
-            <a
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-black transition-colors"
-              aria-label="Instagram"
-            >
-              <Instagram size={20} />
-            </a>
-            <a
-              href={kakaoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-black transition-colors"
-              aria-label="KakaoTalk Channel"
-            >
-              <KakaoIcon size={24} />
-            </a>
-          </div>
+
           <div className="text-[11px] md:text-xs text-gray-500 tracking-wide text-center">
             © 2019 by Commonmade Photography. Proudly created.
           </div>
