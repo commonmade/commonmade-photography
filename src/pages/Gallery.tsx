@@ -39,36 +39,59 @@ function useAspectRatios(photos: Photo[]) {
   return aspectRatios;
 }
 
-// Layout Algorithm: Groups photos into mixed sequences (1 or 2 per row)
-// Prevents portraits from getting blown up to full width by adjusting target heights.
-function chunkPhotosByOrientation(photos: Photo[], ratios: Record<string, number>) {
+// Layout Algorithm: Smart Justified Row Packer
+// To ensure there are NO blank spaces and NO awkwardly stretched single portraits,
+// this groups photos by aiming for a "Target Row Width Ratio" instead of strict counts.
+function packPhotosIntoPerfectRows(photos: Photo[], ratios: Record<string, number>) {
   const rows = [];
-  let i = 0;
-  // Desired rhythm sizes to mix things up: 1 large, 2 pair, 2 pair
-  const rhythmSizes = [1, 2, 2];
-  let rhythmIndex = 0;
+  let currentRow: Photo[] = [];
+  let currentRatioSum = 0;
 
-  while (i < photos.length) {
-    const rowSize = Math.min(rhythmSizes[rhythmIndex % rhythmSizes.length], photos.length - i);
-    const rowPhotos = photos.slice(i, i + rowSize);
+  // Tweak these to change how many photos fit per row
+  // A standard landscape photo ratio is ~1.5
+  // A standard portrait photo ratio is ~0.66
 
-    // Determine the base target height depending on if it's a 1-item row or 2-item row
-    let targetHeight = rowSize === 1 ? 600 : 380;
+  // If we want rows to typically have 1-2 photos, an ideal row ratio sum is around 1.5 to 2.0
+  const idealRowRatioSum = 1.9;
 
-    // If it's a 1-item row, check if the single image is a portrait.
-    // If it is a portrait (ratio <= 1.1), severely limit its height so it doesn't stretch huge.
-    if (rowSize === 1) {
-      const currentRatio = ratios[rowPhotos[0].id] || 1.5;
-      if (currentRatio <= 1.1) {
-        targetHeight = 400; // Small height for solo portrait
+  for (let i = 0; i < photos.length; i++) {
+    const photo = photos[i];
+    const ratio = ratios[photo.id] || 1.5;
+
+    currentRow.push(photo);
+    currentRatioSum += ratio;
+
+    // Decide if we should break the row here
+    // We break if adding another photo would make it way too wide, OR if it's already "wide enough"
+    let shouldBreak = false;
+
+    // Look ahead to see if adding the next photo overshoots terribly
+    if (i < photos.length - 1) {
+      const nextRatio = ratios[photos[i + 1].id] || 1.5;
+      if (currentRatioSum >= idealRowRatioSum || (currentRatioSum + nextRatio > idealRowRatioSum * 1.5)) {
+        shouldBreak = true;
       }
+    } else {
+      // Last photo always breaks
+      shouldBreak = true;
     }
 
-    rows.push({ size: rowSize, items: rowPhotos, targetHeight });
+    if (shouldBreak) {
+      // The larger the ratio sum, the shorter the target height needs to be to make it fit max-width
+      // Base height 500, divided by the actual density of the row
+      const calculatedHeight = Math.min(600, Math.max(250, 700 / currentRatioSum));
 
-    i += rowSize;
-    rhythmIndex++;
+      rows.push({
+        size: currentRow.length,
+        items: currentRow,
+        targetHeight: calculatedHeight
+      });
+
+      currentRow = [];
+      currentRatioSum = 0;
+    }
   }
+
   return rows;
 }
 
@@ -216,28 +239,25 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             </div>
           ) : (
             <>
-              {/* Desktop View: Orientation-Aware Gallery (Landscapes: 1/row, Portraits: 2/row) */}
-              <div className="hidden md:flex flex-col gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24">
+              {/* Desktop View: Perfectly Packed Justified Gallery */}
+              <div className="hidden md:flex flex-wrap gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24 after:content-[''] after:flex-grow-[10] after:min-w-[40%]">
                 {(() => {
-                  const rows = chunkPhotosByOrientation(allPhotos, portfolioRatios);
+                  const rows = packPhotosIntoPerfectRows(allPhotos, portfolioRatios);
                   let photoIndexCounter = 0; // to keep track of absolute index for lightbox
 
-                  return rows.map((row, rowIndex) => {
-                    const currentRowIndex = photoIndexCounter;
-                    photoIndexCounter += row.items.length; // Use row.items.length instead of row.size for accuracy
-
-                    return (
-                      <div key={`row-${rowIndex}`} className="flex gap-1 md:gap-[6px] w-full">
-                        {row.items.map((photo: Photo, localIndex: number) => (
-                          <PortfolioItem
-                            key={photo.id}
-                            photo={photo}
-                            targetRowHeight={row.targetHeight}
-                            onOpenLightbox={() => setFullscreenPhotoIndex(currentRowIndex + localIndex)}
-                          />
-                        ))}
-                      </div>
-                    );
+                  return rows.map((row) => {
+                    const rowElements = row.items.map((photo: Photo, localIndex: number) => {
+                      const absoluteIndex = photoIndexCounter++;
+                      return (
+                        <PortfolioItem
+                          key={photo.id}
+                          photo={photo}
+                          targetRowHeight={row.targetHeight}
+                          onOpenLightbox={() => setFullscreenPhotoIndex(absoluteIndex)}
+                        />
+                      );
+                    });
+                    return rowElements;
                   });
                 })()}
               </div>
@@ -336,28 +356,25 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
               <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
             ) : (
               <>
-                {/* Desktop/Tablet View: Orientation-Aware Gallery */}
-                <div className="hidden md:flex flex-col gap-[6px] w-full max-w-5xl mx-auto">
+                {/* Desktop/Tablet View: Perfectly Packed Justified Gallery */}
+                <div className="hidden md:flex flex-wrap gap-[6px] w-full max-w-5xl mx-auto after:content-[''] after:flex-grow-[10] after:min-w-[40%]">
                   {(() => {
-                    const rows = chunkPhotosByOrientation(lightboxPhotos, lightboxRatios);
+                    const rows = packPhotosIntoPerfectRows(lightboxPhotos, lightboxRatios);
                     let photoIndexCounter = 0;
 
-                    return rows.map((row, rowIndex) => {
-                      const currentRowIndex = photoIndexCounter;
-                      photoIndexCounter += row.items.length; // Use row.items.length instead of row.size for accuracy
-
-                      return (
-                        <div key={`row-${rowIndex}`} className="flex gap-[6px] w-full">
-                          {row.items.map((photo: Photo, localIndex: number) => (
-                            <PortfolioItem
-                              key={photo.id}
-                              photo={photo}
-                              targetRowHeight={row.targetHeight}
-                              onOpenLightbox={() => setFullscreenPhotoIndex(currentRowIndex + localIndex)}
-                            />
-                          ))}
-                        </div>
-                      );
+                    return rows.map((row) => {
+                      const rowElements = row.items.map((photo: Photo, localIndex: number) => {
+                        const absoluteIndex = photoIndexCounter++;
+                        return (
+                          <PortfolioItem
+                            key={photo.id}
+                            photo={photo}
+                            targetRowHeight={row.targetHeight}
+                            onOpenLightbox={() => setFullscreenPhotoIndex(absoluteIndex)}
+                          />
+                        );
+                      });
+                      return rowElements;
                     });
                   })()}
                 </div>
@@ -425,11 +442,10 @@ function PortfolioItem({ photo, targetRowHeight, onOpenLightbox }: PortfolioItem
   return (
     <div
       className={`relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0`}
-      // Cap flex-grow heavily so a single odd item left over on the last row cannot expand to fill the entire container
+      // Let flex-grow handle all sizing cleanly. No max-widths.
       style={{
         flexGrow: aspectRatio * 10,
-        flexBasis: `${aspectRatio * targetRowHeight}px`,
-        maxWidth: aspectRatio <= 1.1 && targetRowHeight < 450 ? "50%" : "100%", // Don't let solo portraits fill 100% width
+        flexBasis: `${aspectRatio * targetRowHeight}px`
       }}
       onClick={onOpenLightbox}
     >
