@@ -73,7 +73,7 @@ export default function Product() {
 
               <div className="w-full h-[1px] bg-gray-300 mb-8" />
 
-              <div className="text-[13px] text-gray-600 leading-[2.4] whitespace-pre-line break-keep font-light">
+              <div className="text-[13px] text-gray-800 leading-[2.4] whitespace-pre-line break-keep font-light">
                 {product.description}
               </div>
             </div>
@@ -93,7 +93,7 @@ export default function Product() {
                 <h4 className="text-sm font-medium tracking-widest uppercase text-black mb-4">
                   {section.title}
                 </h4>
-                <div className="text-xs text-gray-500 leading-loose whitespace-pre-line">
+                <div className="text-[13px] text-gray-800 leading-[2.4] whitespace-pre-line break-keep font-light">
                   {section.body}
                 </div>
               </div>

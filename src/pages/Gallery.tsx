@@ -140,10 +140,10 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             </div>
           ) : (
             <>
-              {/* Desktop View: Fixed 4-item justified rows */}
-              <div className="hidden md:flex flex-col gap-1 px-1">
+              {/* Desktop View: 4 items per row (Justified Flex to align bottoms perfectly) */}
+              <div className="hidden md:flex flex-col gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24">
                 {Array.from({ length: Math.ceil(allPhotos.length / 4) }).map((_, rowIndex) => (
-                  <div key={rowIndex} className="flex gap-1 w-full">
+                  <div key={rowIndex} className="flex gap-1 md:gap-2 w-full">
                     {allPhotos.slice(rowIndex * 4, rowIndex * 4 + 4).map((photo: Photo, i: number) => (
                       <PortfolioItem
                         key={photo.id}
@@ -151,9 +151,9 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
                         onOpenLightbox={() => setFullscreenPhotoIndex(rowIndex * 4 + i)}
                       />
                     ))}
-                    {/* Placeholder for last row if fewer than 4 items */}
+                    {/* Placeholder for last row if fewer than 4 items to prevent stretching */}
                     {allPhotos.slice(rowIndex * 4, rowIndex * 4 + 4).length < 4 && (
-                      <div className="flex-grow-[10] h-[380px]"></div>
+                      <div className="flex-grow-[10] h-[300px] md:h-[380px]"></div>
                     )}
                   </div>
                 ))}
@@ -186,13 +186,13 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
 
       {/* Venue/Other Categories View (Album Grid) */}
       {!loading && !isPortfolio && (
-        <div className="grid grid-cols-2 gap-2 md:gap-6 px-4 md:px-0 max-w-5xl mx-auto pb-32">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 px-4 md:px-0 max-w-5xl mx-auto pb-32">
           {albums.length === 0 ? (
-            <div className="text-center py-32 text-gray-400 text-sm tracking-widest uppercase col-span-2">
+            <div className="text-center py-32 text-gray-400 text-sm tracking-widest uppercase col-span-1 md:col-span-2">
               No albums yet
             </div>
           ) : (
-            albums.map((album) => {
+            albums.map((album, index) => {
               const isMobileActive = activeMobileId === album.id;
               const bgOverlayClass = isMobileActive
                 ? "bg-black/60 opacity-100"
@@ -210,7 +210,8 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
                   <div className="w-full h-full relative">
                     {album.coverImageUrl ? (
                       <img
-                        loading="lazy"
+                        loading={index < 4 ? "eager" : "lazy"}
+                        fetchPriority={index < 4 ? "high" : "auto"}
                         src={album.coverImageUrl}
                         alt={album.title}
                         className="w-full h-full object-cover block transition-transform duration-1000 group-hover:scale-105"
@@ -251,18 +252,40 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             {lightboxLoading ? (
               <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
             ) : (
-              <div className="columns-1 md:columns-2 gap-[2px] md:gap-[6px] cursor-zoom-in w-full max-w-5xl mx-auto">
-                {lightboxPhotos.map((photo, i) => (
-                  <img
-                    key={photo.id}
-                    loading="lazy"
-                    src={photo.url}
-                    alt=""
-                    onClick={(e) => { e.stopPropagation(); setFullscreenPhotoIndex(i); }}
-                    className="w-full h-auto object-cover mb-[2px] md:mb-[6px] shadow-sm bg-gray-50 hover:opacity-95 transition-opacity duration-300 break-inside-avoid"
-                  />
-                ))}
-              </div>
+              <>
+                {/* Desktop/Tablet View: 2 items per row (Justified Flex to align bottoms perfectly, left-to-right order) */}
+                <div className="hidden md:flex flex-col gap-[6px] w-full max-w-5xl mx-auto">
+                  {Array.from({ length: Math.ceil(lightboxPhotos.length / 2) }).map((_, rowIndex) => (
+                    <div key={rowIndex} className="flex gap-[6px] w-full">
+                      {lightboxPhotos.slice(rowIndex * 2, rowIndex * 2 + 2).map((photo: Photo, i: number) => (
+                        <PortfolioItem
+                          key={photo.id}
+                          photo={photo}
+                          onOpenLightbox={() => setFullscreenPhotoIndex(rowIndex * 2 + i)}
+                        />
+                      ))}
+                      {/* Placeholder for last row if fewer than 2 items to prevent stretching */}
+                      {lightboxPhotos.slice(rowIndex * 2, rowIndex * 2 + 2).length < 2 && (
+                        <div className="flex-grow-[10] h-[300px] md:h-[380px]"></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Mobile View: 1-column Stack */}
+                <div className="flex flex-col md:hidden gap-[2px] cursor-zoom-in w-full max-w-5xl mx-auto">
+                  {lightboxPhotos.map((photo, i) => (
+                    <img
+                      key={photo.id}
+                      loading="lazy"
+                      src={photo.url}
+                      alt=""
+                      onClick={(e) => { e.stopPropagation(); setFullscreenPhotoIndex(i); }}
+                      className="w-full h-auto object-cover mb-[2px] shadow-sm bg-gray-50 hover:opacity-95 transition-opacity duration-300 break-inside-avoid"
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -332,3 +355,5 @@ function PortfolioItem({ photo, onOpenLightbox }: PortfolioItemProps) {
     </div>
   );
 }
+
+

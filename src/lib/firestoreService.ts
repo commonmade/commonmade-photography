@@ -31,7 +31,7 @@ function storageRefFromDownloadURL(url: string) {
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
-export interface Category {
+interface Category {
     id: string;
     name: string;
     slug: string;
@@ -58,11 +58,11 @@ export interface Photo {
     createdAt: unknown;
 }
 
-export interface PageContent {
+interface PageContent {
     [key: string]: unknown;
 }
 
-export interface SiteConfig {
+interface SiteConfig {
     [key: string]: string;
 }
 
@@ -93,11 +93,7 @@ export interface ProductItem {
 
 // ─── Categories ────────────────────────────────────────────────────────────
 
-export async function getCategories(): Promise<Category[]> {
-    const snap = await getDocs(collection(db, "categories"));
-    const cats = snap.docs.map((d) => ({ id: d.id, ...d.data() } as Category));
-    return cats.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-}
+
 
 // ─── Inquiries ─────────────────────────────────────────────────────────────
 
@@ -153,16 +149,7 @@ export async function getAlbumsByCategory(categorySlug: string): Promise<Album[]
     return albums.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 }
 
-export async function getAllAlbums(): Promise<Album[]> {
-    const snap = await getDocs(collection(db, "albums"));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Album));
-}
 
-export async function getAlbumById(id: string): Promise<Album | null> {
-    const snap = await getDoc(doc(db, "albums", id));
-    if (!snap.exists()) return null;
-    return { id: snap.id, ...snap.data() } as Album;
-}
 
 export async function createAlbum(data: Omit<Album, "id" | "createdAt">): Promise<string> {
     const docRef = await addDoc(collection(db, "albums"), {

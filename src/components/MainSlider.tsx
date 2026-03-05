@@ -37,7 +37,7 @@ export default function MainSlider() {
     }
 
     return (
-        <div className="relative w-full h-[70vh] md:h-[80vh] bg-white animate-in fade-in duration-1000 group">
+        <div className="relative w-full h-[70vh] md:h-[80vh] bg-white group">
 
             {slides.length > 1 && (
                 <>
@@ -73,7 +73,7 @@ export default function MainSlider() {
                 }
                 className="w-full h-full !overflow-visible"
             >
-                {slides.map((slide) => (
+                {slides.map((slide, index) => (
                     <SwiperSlide
                         key={slide.id}
                         className="w-[85%] sm:w-[75%] md:w-[65%] lg:w-[55%] h-full transition-all duration-300"
@@ -82,6 +82,8 @@ export default function MainSlider() {
                             <img
                                 src={slide.url}
                                 alt={slide.filename || "Main slide"}
+                                loading={index === 0 ? "eager" : "lazy"}
+                                fetchPriority={index === 0 ? "high" : "auto"}
                                 className="w-full h-full object-cover object-center rounded-sm" // Optional: slight rounded corners for aesthetics
                             />
                         </div>

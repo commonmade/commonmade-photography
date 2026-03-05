@@ -87,6 +87,8 @@ export default function Home() {
             <img
               src={content.imageUrl}
               alt="Home visual"
+              loading="eager"
+              fetchPriority="high"
               className="w-full h-auto object-cover"
               style={{ maxHeight: "75vh" }}
             />
