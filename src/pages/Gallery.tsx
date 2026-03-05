@@ -140,22 +140,37 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             </div>
           ) : (
             <>
-              {/* Desktop View: Dynamic Editorial Justified Flex Gallery */}
-              <div className="hidden md:flex flex-wrap gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24 after:content-[''] after:flex-grow-[10] after:min-w-[40%]">
-                {allPhotos.map((photo: Photo, i: number) => {
-                  // Focus on Hero (1 large) and Pair (2 medium) rhythms, omitting trios
-                  const pattern = [600, 380, 420, 500, 380, 420];
-                  const targetHeight = pattern[i % pattern.length];
+              {/* Desktop View: Strictly Chunked Editorial Gallery (Fixes margins/gaps) */}
+              <div className="hidden md:flex flex-col gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24">
+                {(() => {
+                  const rows = [];
+                  let i = 0;
+                  // Rhythm: 1 hero, 2 pair, 2 pair
+                  const rhythmSizes = [1, 2, 2];
+                  let rhythmIndex = 0;
 
-                  return (
-                    <PortfolioItem
-                      key={photo.id}
-                      photo={photo}
-                      targetRowHeight={targetHeight}
-                      onOpenLightbox={() => setFullscreenPhotoIndex(i)}
-                    />
-                  );
-                })}
+                  while (i < allPhotos.length) {
+                    const rowSize = Math.min(rhythmSizes[rhythmIndex % rhythmSizes.length], allPhotos.length - i);
+                    const rowPhotos = allPhotos.slice(i, i + rowSize);
+
+                    rows.push(
+                      <div key={`row-${i}`} className="flex gap-1 md:gap-[6px] w-full">
+                        {rowPhotos.map((photo: Photo, localIndex: number) => (
+                          <PortfolioItem
+                            key={photo.id}
+                            photo={photo}
+                            targetRowHeight={rowSize === 1 ? 600 : 380}
+                            onOpenLightbox={() => setFullscreenPhotoIndex(i + localIndex)}
+                          />
+                        ))}
+                      </div>
+                    );
+
+                    i += rowSize;
+                    rhythmIndex++;
+                  }
+                  return rows;
+                })()}
               </div>
 
               {/* Mobile View: 1-column Stack (Original aspect ratio) */}
@@ -252,22 +267,37 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
               <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
             ) : (
               <>
-                {/* Desktop/Tablet View: Dynamic Editorial Justified Flex Gallery */}
-                <div className="hidden md:flex flex-wrap gap-[6px] w-full max-w-5xl mx-auto after:content-[''] after:flex-grow-[10] after:min-w-[40%]">
-                  {lightboxPhotos.map((photo: Photo, i: number) => {
-                    // Maximum of 2 images per row rhythm
-                    const pattern = [450, 280, 280, 280, 280];
-                    const targetHeight = pattern[i % pattern.length];
+                {/* Desktop/Tablet View: Strictly Chunked Editorial Gallery (Fixes margins/gaps) */}
+                <div className="hidden md:flex flex-col gap-[6px] w-full max-w-5xl mx-auto">
+                  {(() => {
+                    const rows = [];
+                    let i = 0;
+                    // Rhythm: 2 pair, 1 hero
+                    const rhythmSizes = [2, 1];
+                    let rhythmIndex = 0;
 
-                    return (
-                      <PortfolioItem
-                        key={photo.id}
-                        photo={photo}
-                        targetRowHeight={targetHeight}
-                        onOpenLightbox={() => setFullscreenPhotoIndex(i)}
-                      />
-                    );
-                  })}
+                    while (i < lightboxPhotos.length) {
+                      const rowSize = Math.min(rhythmSizes[rhythmIndex % rhythmSizes.length], lightboxPhotos.length - i);
+                      const rowPhotos = lightboxPhotos.slice(i, i + rowSize);
+
+                      rows.push(
+                        <div key={`row-${i}`} className="flex gap-[6px] w-full">
+                          {rowPhotos.map((photo: Photo, localIndex: number) => (
+                            <PortfolioItem
+                              key={photo.id}
+                              photo={photo}
+                              targetRowHeight={rowSize === 1 ? 500 : 280}
+                              onOpenLightbox={() => setFullscreenPhotoIndex(i + localIndex)}
+                            />
+                          ))}
+                        </div>
+                      );
+
+                      i += rowSize;
+                      rhythmIndex++;
+                    }
+                    return rows;
+                  })()}
                 </div>
 
                 {/* Mobile View: 1-column Stack */}
@@ -333,11 +363,9 @@ function PortfolioItem({ photo, targetRowHeight, onOpenLightbox }: PortfolioItem
   return (
     <div
       className="relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0"
-      // Cap flex-grow heavily so a single odd item left over on the last row cannot expand to fill the entire container
       style={{
         flexGrow: aspectRatio * 10,
-        flexBasis: `${aspectRatio * targetRowHeight}px`,
-        maxWidth: "100%"
+        flexBasis: `${aspectRatio * targetRowHeight}px`
       }}
       onClick={onOpenLightbox}
     >
