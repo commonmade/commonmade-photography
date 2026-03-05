@@ -157,8 +157,14 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
                     />
                   );
                 })}
-                {/* Spacer to prevent the last row from stretching */}
-                <div className="flex-grow-[99999] min-w-[30%]"></div>
+                {/* 
+                  Multiple spacers are needed to force the last row of a justified flex grid 
+                  to align to the left without stretching the last photo out of proportion.
+                  10 spacers guarantee even a very wide screen will wrap correctly.
+                */}
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={`spacer-${i}`} className="flex-grow-[100] h-0"></div>
+                ))}
               </div>
 
               {/* Mobile View: 1-column Stack (Original aspect ratio) */}
@@ -271,8 +277,10 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
                       />
                     );
                   })}
-                  {/* Spacer to prevent the last row from stretching */}
-                  <div className="flex-grow-[99999] min-w-[30%]"></div>
+                  {/* Invisible spacers to strictly left-align the last row without stretching it */}
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={`spacer-${i}`} className="flex-grow-[100] h-0"></div>
+                  ))}
                 </div>
 
                 {/* Mobile View: 1-column Stack */}
