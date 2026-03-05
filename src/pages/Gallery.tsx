@@ -76,6 +76,13 @@ function packPhotosIntoPerfectRows(photos: Photo[], ratios: Record<string, numbe
       shouldBreak = true;
     }
 
+    // USER OVERRIDE: Absolutely under no circumstances ever allow more than 2 photos in a single row.
+    // Combinations permitted: 1 Landscape, 2 Landscapes, Landscape+Portrait, Portrait+Portrait. 
+    // Portrait+Portrait+Portrait is explicitly forbidden.
+    if (currentRow.length >= 2) {
+      shouldBreak = true;
+    }
+
     if (shouldBreak) {
       // The larger the ratio sum, the shorter the target height needs to be to make it fit max-width
       // Base height 500, divided by the actual density of the row
