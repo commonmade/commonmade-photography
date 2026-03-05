@@ -141,11 +141,10 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
           ) : (
             <>
               {/* Desktop View: Dynamic Editorial Justified Flex Gallery */}
-              <div className="hidden md:flex flex-wrap gap-1 md:gap-[6px] px-1 md:px-8 max-w-[1600px] mx-auto pb-24">
+              <div className="hidden md:flex flex-wrap gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24 after:content-[''] after:flex-grow-[10] after:min-w-[40%]">
                 {allPhotos.map((photo: Photo, i: number) => {
-                  // A repeating rhythm of target heights to break up monotony organically
-                  // 1 large (hero), 2 medium (pair), 3 small (trio), 2 medium (pair)
-                  const pattern = [600, 300, 300, 200, 200, 200, 300, 300];
+                  // Focus on Hero (1 large) and Pair (2 medium) rhythms, omitting trios
+                  const pattern = [600, 380, 420, 500, 380, 420];
                   const targetHeight = pattern[i % pattern.length];
 
                   return (
@@ -157,14 +156,6 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
                     />
                   );
                 })}
-                {/* 
-                  Multiple spacers are needed to force the last row of a justified flex grid 
-                  to align to the left without stretching the last photo out of proportion.
-                  10 spacers guarantee even a very wide screen will wrap correctly.
-                */}
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={`spacer-${i}`} className="flex-grow-[100] h-0"></div>
-                ))}
               </div>
 
               {/* Mobile View: 1-column Stack (Original aspect ratio) */}
@@ -262,10 +253,10 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             ) : (
               <>
                 {/* Desktop/Tablet View: Dynamic Editorial Justified Flex Gallery */}
-                <div className="hidden md:flex flex-wrap gap-[6px] w-full max-w-5xl mx-auto">
+                <div className="hidden md:flex flex-wrap gap-[6px] w-full max-w-5xl mx-auto after:content-[''] after:flex-grow-[10] after:min-w-[40%]">
                   {lightboxPhotos.map((photo: Photo, i: number) => {
-                    // Slightly smaller rhythm for the contained album detail view
-                    const pattern = [500, 250, 250, 180, 180, 180, 250, 250];
+                    // Maximum of 2 images per row rhythm
+                    const pattern = [450, 280, 280, 280, 280];
                     const targetHeight = pattern[i % pattern.length];
 
                     return (
@@ -277,10 +268,6 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
                       />
                     );
                   })}
-                  {/* Invisible spacers to strictly left-align the last row without stretching it */}
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={`spacer-${i}`} className="flex-grow-[100] h-0"></div>
-                  ))}
                 </div>
 
                 {/* Mobile View: 1-column Stack */}
@@ -346,9 +333,11 @@ function PortfolioItem({ photo, targetRowHeight, onOpenLightbox }: PortfolioItem
   return (
     <div
       className="relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0"
+      // Cap flex-grow heavily so a single odd item left over on the last row cannot expand to fill the entire container
       style={{
-        flexGrow: aspectRatio * 100,
-        flexBasis: `${aspectRatio * targetRowHeight}px`
+        flexGrow: aspectRatio * 10,
+        flexBasis: `${aspectRatio * targetRowHeight}px`,
+        maxWidth: "100%"
       }}
       onClick={onOpenLightbox}
     >
