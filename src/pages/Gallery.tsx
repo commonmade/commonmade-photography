@@ -39,37 +39,35 @@ function useAspectRatios(photos: Photo[]) {
   return aspectRatios;
 }
 
-// Layout Algorithm: Groups photos optimally
-// Landscape (ratio > 1.1) -> 1 per row
-// Portrait (ratio <= 1.1) -> 2 per row (unless only 1 portrait is left)
+// Layout Algorithm: Groups photos into mixed sequences (1 or 2 per row)
+// Prevents portraits from getting blown up to full width by adjusting target heights.
 function chunkPhotosByOrientation(photos: Photo[], ratios: Record<string, number>) {
   const rows = [];
   let i = 0;
+  // Desired rhythm sizes to mix things up: 1 large, 2 pair, 2 pair
+  const rhythmSizes = [1, 2, 2];
+  let rhythmIndex = 0;
 
   while (i < photos.length) {
-    const currentRatio = ratios[photos[i].id] || 1.5; // fallback landscape
+    const rowSize = Math.min(rhythmSizes[rhythmIndex % rhythmSizes.length], photos.length - i);
+    const rowPhotos = photos.slice(i, i + rowSize);
 
-    // Landscape logic
-    if (currentRatio > 1.1) {
-      rows.push({ size: 1, items: [photos[i]], targetHeight: 500 });
-      i += 1;
-    }
-    // Portrait logic
-    else {
-      // Check if next photo exists and is also portrait/square
-      if (i + 1 < photos.length) {
-        const nextRatio = ratios[photos[i + 1].id] || 1.5;
-        if (nextRatio <= 1.1) {
-          // Pair them
-          rows.push({ size: 2, items: [photos[i], photos[i + 1]], targetHeight: 400 });
-          i += 2;
-          continue;
-        }
+    // Determine the base target height depending on if it's a 1-item row or 2-item row
+    let targetHeight = rowSize === 1 ? 600 : 380;
+
+    // If it's a 1-item row, check if the single image is a portrait.
+    // If it is a portrait (ratio <= 1.1), severely limit its height so it doesn't stretch huge.
+    if (rowSize === 1) {
+      const currentRatio = ratios[rowPhotos[0].id] || 1.5;
+      if (currentRatio <= 1.1) {
+        targetHeight = 400; // Small height for solo portrait
       }
-      // If we are here, it's a portrait but we couldn't pair it (either last photo, or next is landscape)
-      rows.push({ size: 1, items: [photos[i]], targetHeight: 500 }); // large single
-      i += 1;
     }
+
+    rows.push({ size: rowSize, items: rowPhotos, targetHeight });
+
+    i += rowSize;
+    rhythmIndex++;
   }
   return rows;
 }
@@ -426,10 +424,12 @@ function PortfolioItem({ photo, targetRowHeight, onOpenLightbox }: PortfolioItem
 
   return (
     <div
-      className="relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0"
+      className={`relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0`}
+      // Cap flex-grow heavily so a single odd item left over on the last row cannot expand to fill the entire container
       style={{
         flexGrow: aspectRatio * 10,
-        flexBasis: `${aspectRatio * targetRowHeight}px`
+        flexBasis: `${aspectRatio * targetRowHeight}px`,
+        maxWidth: aspectRatio <= 1.1 && targetRowHeight < 450 ? "50%" : "100%", // Don't let solo portraits fill 100% width
       }}
       onClick={onOpenLightbox}
     >
