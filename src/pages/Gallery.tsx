@@ -140,23 +140,18 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             </div>
           ) : (
             <>
-              {/* Desktop View: 4 items per row (Justified Flex to align bottoms perfectly) */}
-              <div className="hidden md:flex flex-col gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24">
-                {Array.from({ length: Math.ceil(allPhotos.length / 4) }).map((_, rowIndex) => (
-                  <div key={rowIndex} className="flex gap-1 md:gap-2 w-full">
-                    {allPhotos.slice(rowIndex * 4, rowIndex * 4 + 4).map((photo: Photo, i: number) => (
-                      <PortfolioItem
-                        key={photo.id}
-                        photo={photo}
-                        onOpenLightbox={() => setFullscreenPhotoIndex(rowIndex * 4 + i)}
-                      />
-                    ))}
-                    {/* Placeholder for last row if fewer than 4 items to prevent stretching */}
-                    {allPhotos.slice(rowIndex * 4, rowIndex * 4 + 4).length < 4 && (
-                      <div className="flex-grow-[10] h-[300px] md:h-[380px]"></div>
-                    )}
-                  </div>
+              {/* Desktop View: Dynamic Justified Flex Gallery */}
+              <div className="hidden md:flex flex-wrap gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24">
+                {allPhotos.map((photo: Photo, i: number) => (
+                  <PortfolioItem
+                    key={photo.id}
+                    photo={photo}
+                    targetRowHeight={350}
+                    onOpenLightbox={() => setFullscreenPhotoIndex(i)}
+                  />
                 ))}
+                {/* Spacer to prevent the last row from stretching */}
+                <div className="flex-grow-[99999] min-w-[30%]"></div>
               </div>
 
               {/* Mobile View: 1-column Stack (Original aspect ratio) */}
@@ -253,23 +248,18 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
               <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
             ) : (
               <>
-                {/* Desktop/Tablet View: 2 items per row (Justified Flex to align bottoms perfectly, left-to-right order) */}
-                <div className="hidden md:flex flex-col gap-[6px] w-full max-w-5xl mx-auto">
-                  {Array.from({ length: Math.ceil(lightboxPhotos.length / 2) }).map((_, rowIndex) => (
-                    <div key={rowIndex} className="flex gap-[6px] w-full">
-                      {lightboxPhotos.slice(rowIndex * 2, rowIndex * 2 + 2).map((photo: Photo, i: number) => (
-                        <PortfolioItem
-                          key={photo.id}
-                          photo={photo}
-                          onOpenLightbox={() => setFullscreenPhotoIndex(rowIndex * 2 + i)}
-                        />
-                      ))}
-                      {/* Placeholder for last row if fewer than 2 items to prevent stretching */}
-                      {lightboxPhotos.slice(rowIndex * 2, rowIndex * 2 + 2).length < 2 && (
-                        <div className="flex-grow-[10] h-[300px] md:h-[380px]"></div>
-                      )}
-                    </div>
+                {/* Desktop/Tablet View: Dynamic Justified Flex Gallery */}
+                <div className="hidden md:flex flex-wrap gap-[6px] w-full max-w-5xl mx-auto">
+                  {lightboxPhotos.map((photo: Photo, i: number) => (
+                    <PortfolioItem
+                      key={photo.id}
+                      photo={photo}
+                      targetRowHeight={350}
+                      onOpenLightbox={() => setFullscreenPhotoIndex(i)}
+                    />
                   ))}
+                  {/* Spacer to prevent the last row from stretching */}
+                  <div className="flex-grow-[99999] min-w-[30%]"></div>
                 </div>
 
                 {/* Mobile View: 1-column Stack */}
@@ -323,35 +313,39 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
 
 interface PortfolioItemProps {
   photo: Photo;
+  targetRowHeight: number;
   onOpenLightbox: () => void;
   key?: React.Key;
 }
 
-function PortfolioItem({ photo, onOpenLightbox }: PortfolioItemProps) {
-  const [aspectRatio, setAspectRatio] = useState<number>(1);
+function PortfolioItem({ photo, targetRowHeight, onOpenLightbox }: PortfolioItemProps) {
+  // Start with a standard landscape ratio fallback
+  const [aspectRatio, setAspectRatio] = useState<number>(1.5);
 
   return (
     <div
-      className="relative group cursor-zoom-in overflow-hidden bg-gray-50 h-[300px] md:h-[380px]"
+      className="relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0"
       style={{
-        flexGrow: aspectRatio,
-        flexBasis: `${aspectRatio * 300}px`
+        flexGrow: aspectRatio * 100,
+        flexBasis: `${aspectRatio * targetRowHeight}px`
       }}
       onClick={onOpenLightbox}
     >
-      <img
-        loading="lazy"
-        src={photo.url}
-        alt=""
-        onLoad={(e) => {
-          const img = e.target as HTMLImageElement;
-          if (img.naturalHeight > 0) {
-            setAspectRatio(img.naturalWidth / img.naturalHeight);
-          }
-        }}
-        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-      />
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+      <div className="w-full relative block" style={{ paddingBottom: `${(1 / aspectRatio) * 100}%` }}>
+        <img
+          loading="lazy"
+          src={photo.url}
+          alt=""
+          onLoad={(e) => {
+            const img = e.target as HTMLImageElement;
+            if (img.naturalHeight > 0) {
+              setAspectRatio(img.naturalWidth / img.naturalHeight);
+            }
+          }}
+          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+      </div>
     </div>
   );
 }
