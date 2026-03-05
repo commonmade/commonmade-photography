@@ -1,6 +1,78 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { getAlbumsByCategory, getPhotosByAlbum, type Album, type Photo } from "../lib/firestoreService";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { getAlbumsByCategory, getPhotosByAlbum, type Photo, type Album } from "../lib/firestoreService";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+
+// Hook to preload image aspect ratios so we can confidently group by landscape vs portrait
+function useAspectRatios(photos: Photo[]) {
+  const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (photos.length === 0) {
+      setAspectRatios({});
+      return;
+    }
+
+    const newRatios: Record<string, number> = {};
+    let loadedCount = 0;
+
+    photos.forEach(photo => {
+      const img = new Image();
+      img.src = photo.url;
+      img.onload = () => {
+        newRatios[photo.id] = img.naturalWidth / img.naturalHeight;
+        loadedCount++;
+        if (loadedCount === photos.length) {
+          setAspectRatios(prev => ({ ...prev, ...newRatios }));
+        }
+      };
+      img.onerror = () => {
+        // Fallback for broken images or errors
+        newRatios[photo.id] = 1.5; // Default to landscape
+        loadedCount++;
+        if (loadedCount === photos.length) {
+          setAspectRatios(prev => ({ ...prev, ...newRatios }));
+        }
+      };
+    });
+  }, [photos]);
+
+  return aspectRatios;
+}
+
+// Layout Algorithm: Groups photos optimally
+// Landscape (ratio > 1.1) -> 1 per row
+// Portrait (ratio <= 1.1) -> 2 per row (unless only 1 portrait is left)
+function chunkPhotosByOrientation(photos: Photo[], ratios: Record<string, number>) {
+  const rows = [];
+  let i = 0;
+
+  while (i < photos.length) {
+    const currentRatio = ratios[photos[i].id] || 1.5; // fallback landscape
+
+    // Landscape logic
+    if (currentRatio > 1.1) {
+      rows.push({ size: 1, items: [photos[i]], targetHeight: 500 });
+      i += 1;
+    }
+    // Portrait logic
+    else {
+      // Check if next photo exists and is also portrait/square
+      if (i + 1 < photos.length) {
+        const nextRatio = ratios[photos[i + 1].id] || 1.5;
+        if (nextRatio <= 1.1) {
+          // Pair them
+          rows.push({ size: 2, items: [photos[i], photos[i + 1]], targetHeight: 400 });
+          i += 2;
+          continue;
+        }
+      }
+      // If we are here, it's a portrait but we couldn't pair it (either last photo, or next is landscape)
+      rows.push({ size: 1, items: [photos[i]], targetHeight: 500 }); // large single
+      i += 1;
+    }
+  }
+  return rows;
+}
 
 interface GalleryProps {
   category: string;
@@ -24,6 +96,9 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
   const [activeMobileId, setActiveMobileId] = useState<string | null>(null);
 
   const isPortfolio = categorySlug === "portfolio";
+
+  // Preload ratios for main portfolio
+  const portfolioRatios = useAspectRatios(isPortfolio ? allPhotos : []);
 
   useEffect(() => {
     setLoading(true);
@@ -101,6 +176,9 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
     );
   }, [currentPhotoSet.length]);
 
+  const lightboxRatios = useAspectRatios(selectedAlbum ? lightboxPhotos : []);
+
+  // Use body padding to prevent scroll when modal is open
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -140,36 +218,29 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             </div>
           ) : (
             <>
-              {/* Desktop View: Strictly Chunked Editorial Gallery (Fixes margins/gaps) */}
+              {/* Desktop View: Orientation-Aware Gallery (Landscapes: 1/row, Portraits: 2/row) */}
               <div className="hidden md:flex flex-col gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24">
                 {(() => {
-                  const rows = [];
-                  let i = 0;
-                  // Rhythm: 1 hero, 2 pair, 2 pair
-                  const rhythmSizes = [1, 2, 2];
-                  let rhythmIndex = 0;
+                  const rows = chunkPhotosByOrientation(allPhotos, portfolioRatios);
+                  let photoIndexCounter = 0; // to keep track of absolute index for lightbox
 
-                  while (i < allPhotos.length) {
-                    const rowSize = Math.min(rhythmSizes[rhythmIndex % rhythmSizes.length], allPhotos.length - i);
-                    const rowPhotos = allPhotos.slice(i, i + rowSize);
+                  return rows.map((row, rowIndex) => {
+                    const currentRowIndex = photoIndexCounter;
+                    photoIndexCounter += row.items.length; // Use row.items.length instead of row.size for accuracy
 
-                    rows.push(
-                      <div key={`row-${i}`} className="flex gap-1 md:gap-[6px] w-full">
-                        {rowPhotos.map((photo: Photo, localIndex: number) => (
+                    return (
+                      <div key={`row-${rowIndex}`} className="flex gap-1 md:gap-[6px] w-full">
+                        {row.items.map((photo: Photo, localIndex: number) => (
                           <PortfolioItem
                             key={photo.id}
                             photo={photo}
-                            targetRowHeight={rowSize === 1 ? 600 : 380}
-                            onOpenLightbox={() => setFullscreenPhotoIndex(i + localIndex)}
+                            targetRowHeight={row.targetHeight}
+                            onOpenLightbox={() => setFullscreenPhotoIndex(currentRowIndex + localIndex)}
                           />
                         ))}
                       </div>
                     );
-
-                    i += rowSize;
-                    rhythmIndex++;
-                  }
-                  return rows;
+                  });
                 })()}
               </div>
 
@@ -267,36 +338,29 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
               <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
             ) : (
               <>
-                {/* Desktop/Tablet View: Strictly Chunked Editorial Gallery (Fixes margins/gaps) */}
+                {/* Desktop/Tablet View: Orientation-Aware Gallery */}
                 <div className="hidden md:flex flex-col gap-[6px] w-full max-w-5xl mx-auto">
                   {(() => {
-                    const rows = [];
-                    let i = 0;
-                    // Rhythm: 2 pair, 1 hero
-                    const rhythmSizes = [2, 1];
-                    let rhythmIndex = 0;
+                    const rows = chunkPhotosByOrientation(lightboxPhotos, lightboxRatios);
+                    let photoIndexCounter = 0;
 
-                    while (i < lightboxPhotos.length) {
-                      const rowSize = Math.min(rhythmSizes[rhythmIndex % rhythmSizes.length], lightboxPhotos.length - i);
-                      const rowPhotos = lightboxPhotos.slice(i, i + rowSize);
+                    return rows.map((row, rowIndex) => {
+                      const currentRowIndex = photoIndexCounter;
+                      photoIndexCounter += row.items.length; // Use row.items.length instead of row.size for accuracy
 
-                      rows.push(
-                        <div key={`row-${i}`} className="flex gap-[6px] w-full">
-                          {rowPhotos.map((photo: Photo, localIndex: number) => (
+                      return (
+                        <div key={`row-${rowIndex}`} className="flex gap-[6px] w-full">
+                          {row.items.map((photo: Photo, localIndex: number) => (
                             <PortfolioItem
                               key={photo.id}
                               photo={photo}
-                              targetRowHeight={rowSize === 1 ? 500 : 280}
-                              onOpenLightbox={() => setFullscreenPhotoIndex(i + localIndex)}
+                              targetRowHeight={row.targetHeight}
+                              onOpenLightbox={() => setFullscreenPhotoIndex(currentRowIndex + localIndex)}
                             />
                           ))}
                         </div>
                       );
-
-                      i += rowSize;
-                      rhythmIndex++;
-                    }
-                    return rows;
+                    });
                   })()}
                 </div>
 
