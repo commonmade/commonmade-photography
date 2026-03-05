@@ -140,16 +140,23 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
             </div>
           ) : (
             <>
-              {/* Desktop View: Dynamic Justified Flex Gallery */}
-              <div className="hidden md:flex flex-wrap gap-1 md:gap-2 px-1 md:px-8 max-w-[1600px] mx-auto pb-24">
-                {allPhotos.map((photo: Photo, i: number) => (
-                  <PortfolioItem
-                    key={photo.id}
-                    photo={photo}
-                    targetRowHeight={350}
-                    onOpenLightbox={() => setFullscreenPhotoIndex(i)}
-                  />
-                ))}
+              {/* Desktop View: Dynamic Editorial Justified Flex Gallery */}
+              <div className="hidden md:flex flex-wrap gap-1 md:gap-[6px] px-1 md:px-8 max-w-[1600px] mx-auto pb-24">
+                {allPhotos.map((photo: Photo, i: number) => {
+                  // A repeating rhythm of target heights to break up monotony organically
+                  // 1 large (hero), 2 medium (pair), 3 small (trio), 2 medium (pair)
+                  const pattern = [600, 300, 300, 200, 200, 200, 300, 300];
+                  const targetHeight = pattern[i % pattern.length];
+
+                  return (
+                    <PortfolioItem
+                      key={photo.id}
+                      photo={photo}
+                      targetRowHeight={targetHeight}
+                      onOpenLightbox={() => setFullscreenPhotoIndex(i)}
+                    />
+                  );
+                })}
                 {/* Spacer to prevent the last row from stretching */}
                 <div className="flex-grow-[99999] min-w-[30%]"></div>
               </div>
@@ -248,16 +255,22 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
               <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
             ) : (
               <>
-                {/* Desktop/Tablet View: Dynamic Justified Flex Gallery */}
+                {/* Desktop/Tablet View: Dynamic Editorial Justified Flex Gallery */}
                 <div className="hidden md:flex flex-wrap gap-[6px] w-full max-w-5xl mx-auto">
-                  {lightboxPhotos.map((photo: Photo, i: number) => (
-                    <PortfolioItem
-                      key={photo.id}
-                      photo={photo}
-                      targetRowHeight={350}
-                      onOpenLightbox={() => setFullscreenPhotoIndex(i)}
-                    />
-                  ))}
+                  {lightboxPhotos.map((photo: Photo, i: number) => {
+                    // Slightly smaller rhythm for the contained album detail view
+                    const pattern = [500, 250, 250, 180, 180, 180, 250, 250];
+                    const targetHeight = pattern[i % pattern.length];
+
+                    return (
+                      <PortfolioItem
+                        key={photo.id}
+                        photo={photo}
+                        targetRowHeight={targetHeight}
+                        onOpenLightbox={() => setFullscreenPhotoIndex(i)}
+                      />
+                    );
+                  })}
                   {/* Spacer to prevent the last row from stretching */}
                   <div className="flex-grow-[99999] min-w-[30%]"></div>
                 </div>
