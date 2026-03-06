@@ -36,7 +36,7 @@ function KakaoIcon({ size = 20 }: { size?: number }) {
 }
 
 const navLinks = [
-  { name: "ABOUT US", hoverName: "ABOUT US", path: "/about" },
+  { name: "ABOUT US", hoverName: "커먼메이드", path: "/about" },
   { name: "Portfolio", hoverName: "본식 스냅", path: "/portfolio" },
   { name: "Venue", hoverName: "장소", path: "/venue" },
   { name: "Product", hoverName: "상품구성", path: "/product" },
