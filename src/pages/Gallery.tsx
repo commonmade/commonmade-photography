@@ -91,7 +91,9 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
   const isPortfolio = categorySlug === "portfolio";
 
   // Preload ratios for main portfolio
-  const portfolioRatios = useAspectRatios(isPortfolio ? allPhotos : []);
+  // Stable empty array to prevent useAspectRatios from allocating a new [] on every render
+  const emptyPhotos = useMemo(() => [], []);
+  const portfolioRatios = useAspectRatios(isPortfolio ? allPhotos : emptyPhotos);
 
   useEffect(() => {
     setLoading(true);
@@ -169,7 +171,7 @@ export default function Gallery({ category, categorySlug }: GalleryProps) {
     );
   }, [currentPhotoSet.length]);
 
-  const lightboxRatios = useAspectRatios(selectedAlbum ? lightboxPhotos : []);
+  const lightboxRatios = useAspectRatios(selectedAlbum ? lightboxPhotos : emptyPhotos);
 
   // Use body padding to prevent scroll when modal is open
   // Keyboard navigation
