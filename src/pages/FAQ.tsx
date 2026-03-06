@@ -117,16 +117,18 @@ export default function FAQ() {
         </div>
 
         {/* Kakao Channel Banner */}
-        <div className="flex justify-center mt-10">
+        <div className="flex justify-center mt-12 mb-4">
           <a
-            href={kakaoUrl}
+            href="https://open.kakao.com/o/sF6Jm5ji"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center px-7 py-3 bg-[#3d3d3d] hover:bg-[#2a2a2a] transition-colors duration-300 cursor-pointer group"
+            className="hover:scale-105 transition-transform duration-300 active:scale-95"
           >
-            <span className="text-white text-[10px] md:text-xs tracking-[0.25em] uppercase font-light">
-              KakaoTalk Channel
-            </span>
+            <img
+              src="/kakao-banner.png"
+              alt="카카오톡 상담연결"
+              className="w-full max-w-[280px] h-auto rounded-xl shadow-sm"
+            />
           </a>
         </div>
       </div>
