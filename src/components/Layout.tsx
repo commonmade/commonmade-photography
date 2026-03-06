@@ -47,8 +47,7 @@ const navLinks = [
 export default function Layout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [kakaoUrl, setKakaoUrl] = useState("http://pf.kakao.com/_nTFqX");
-  const [kakaoChannelId, setKakaoChannelId] = useState("_nTFqX");
+  const [kakaoUrl, setKakaoUrl] = useState("https://open.kakao.com/o/sF6Jm5ji");
   const location = useLocation();
 
   // Close mobile menu on route change
@@ -60,7 +59,6 @@ export default function Layout() {
   useEffect(() => {
     getSiteConfig().then((cfg) => {
       if (cfg.kakao && cfg.kakao !== "#") setKakaoUrl(cfg.kakao);
-      // Removed kakaoChannelId override so it stays strictly hardcoded to _nTFqX
     }).catch(() => { });
   }, []);
 
@@ -187,7 +185,7 @@ export default function Layout() {
         </footer>
       </div>
 
-      <KakaoChatButton channelId={kakaoChannelId} />
+      <KakaoChatButton chatUrl={kakaoUrl} />
     </div>
   );
 }

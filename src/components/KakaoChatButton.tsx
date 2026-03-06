@@ -1,15 +1,15 @@
 import { MessageCircle } from "lucide-react";
 
 interface KakaoChatButtonProps {
-    channelId: string; // e.g. '_abcde'
+    chatUrl: string;
 }
 
-export default function KakaoChatButton({ channelId }: KakaoChatButtonProps) {
-    if (!channelId) return null;
+export default function KakaoChatButton({ chatUrl }: KakaoChatButtonProps) {
+    if (!chatUrl) return null;
 
-    // 만약 사용자가 "_nTFqX" 대신 "http://pf.kakao.com/_nTFqX" 를 통째로 넣었을 경우를 방어하는 코드
-    const cleanId = channelId.includes('/') ? channelId.split('/').pop() : channelId;
-    const chatUrl = `https://pf.kakao.com/${cleanId}/chat`;
+    // 만약 예전 방식(_nTFqX 처럼 아이디만)으로 저장되어 있다면 변환
+    const isChannelId = !chatUrl.startsWith('http') && !chatUrl.includes('/');
+    const finalUrl = isChannelId ? `https://pf.kakao.com/${chatUrl}/chat` : chatUrl;
 
     return (
         <a
