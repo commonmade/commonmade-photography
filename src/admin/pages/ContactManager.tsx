@@ -18,7 +18,7 @@ const FIELDS = [
             { key: "phone", label: "전화번호", type: "text" },
             { key: "email", label: "이메일", type: "text" },
             { key: "instagram", label: "인스타그램 (@ 포함)", type: "text" },
-            { key: "kakao", label: "카카오채널 ID (pf.kakao.com/_뒤 ID)", type: "text" },
+            { key: "kakao", label: "카카오 채팅 (오픈채팅 URL 또는 채널 ID)", type: "text" },
         ],
     },
     // ── 문의 폼 텍스트 ───────────────────────────────────────

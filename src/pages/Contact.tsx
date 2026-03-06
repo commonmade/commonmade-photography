@@ -215,7 +215,7 @@ export default function Contact() {
           </div>
 
           <a
-            href="https://pf.kakao.com/_nTFqX/chat"
+            href={content.kakao.startsWith('http') ? content.kakao : `https://pf.kakao.com/${content.kakao}/chat`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-start space-x-6 group cursor-pointer w-fit"
@@ -223,10 +223,10 @@ export default function Contact() {
             <span className="text-gray-400 mt-1 group-hover:text-black transition-colors"><KakaoIcon size={29} /></span>
             <div>
               <h3 className="text-xs uppercase tracking-[0.2em] text-gray-900 mb-2 font-medium group-hover:text-black transition-colors">
-                KakaoTalk Channel
+                KakaoTalk Inquiry
               </h3>
               <span className="text-sm text-gray-500 leading-relaxed group-hover:text-black transition-colors block">
-                {content.kakao}
+                {content.kakao.includes('/') ? 'Open Chat' : content.kakao}
               </span>
             </div>
           </a>
