@@ -1,6 +1,81 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { getAlbumsByCategory, getPhotosByAlbum, type Photo, type Album } from "../lib/firestoreService";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+
+// Hook to preload image aspect ratios
+function useAspectRatios(photos: Photo[]) {
+    const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        if (photos.length === 0) {
+            setAspectRatios({});
+            return;
+        }
+
+        const newRatios: Record<string, number> = {};
+        let loadedCount = 0;
+
+        photos.forEach(photo => {
+            const img = new Image();
+            img.src = photo.url;
+            img.onload = () => {
+                newRatios[photo.id] = img.naturalWidth / img.naturalHeight;
+                loadedCount++;
+                if (loadedCount === photos.length) {
+                    setAspectRatios(prev => ({ ...prev, ...newRatios }));
+                }
+            };
+            img.onerror = () => {
+                newRatios[photo.id] = 1.5;
+                loadedCount++;
+                if (loadedCount === photos.length) {
+                    setAspectRatios(prev => ({ ...prev, ...newRatios }));
+                }
+            };
+        });
+    }, [photos]);
+
+    return aspectRatios;
+}
+
+// Layout Algorithm: Strict 2-column or 1-column builder for Venue Details
+// Allows 1 Landscape alone, or combinations of 2 items (P+P, L+P, P+L)
+function chunkPhotosForVenue(photos: Photo[], ratios: Record<string, number>) {
+    const rows = [];
+    let i = 0;
+
+    while (i < photos.length) {
+        let take = 1;
+        const currentRatio = ratios[photos[i].id] || 1.5;
+
+        // If the current photo is landscape (ratio > 1.2), there is a chance it wants to be alone
+        // But the user requested "2행 형태 기본 유지해줘" (Keep mostly 2 columns)
+        // If it's a portrait (<1.2), we ALWAYS try to take 2 so portraits aren't alone.
+        if (i < photos.length - 1) {
+            const nextRatio = ratios[photos[i + 1].id] || 1.5;
+
+            if (currentRatio < 1.1 || nextRatio < 1.1) {
+                // If either this one or next one is portrait, group them to complete a 2-col row
+                take = 2;
+            } else {
+                // If both are landscapes, we can still group them to make L+L, 
+                // but if we want a full width L, we can just leave take=1.
+                // Let's bias towards taking 2 unless it results in extreme squishing
+                if (currentRatio + nextRatio > 3.2) {
+                    // Two very wide panoramas -> let them be single wide images
+                    take = 1;
+                } else {
+                    take = 2;
+                }
+            }
+        }
+
+        rows.push(photos.slice(i, i + take));
+        i += take;
+    }
+
+    return rows;
+}
 
 interface VenueGalleryProps {
     category: string;
@@ -21,6 +96,9 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
 
     // Mobile Touch Hover State
     const [activeMobileId, setActiveMobileId] = useState<string | null>(null);
+
+    const emptyPhotos = useMemo(() => [], []);
+    const lightboxRatios = useAspectRatios(selectedAlbum ? lightboxPhotos : emptyPhotos);
 
     useEffect(() => {
         setLoading(true);
@@ -182,23 +260,33 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                             <div className="flex justify-center items-center py-32"><div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div></div>
                         ) : (
                             <>
-                                {/* Desktop/Tablet View: 2-column grid */}
-                                <div className="hidden md:grid grid-cols-2 gap-[6px] w-full max-w-5xl mx-auto">
-                                    {lightboxPhotos.map((photo, i) => (
-                                        <div
-                                            key={photo.id}
-                                            className="relative overflow-hidden bg-gray-50 cursor-zoom-in group aspect-[3/4]"
-                                            onClick={(e) => { e.stopPropagation(); setFullscreenPhotoIndex(i); }}
-                                        >
-                                            <img
-                                                loading="lazy"
-                                                src={photo.url}
-                                                alt=""
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
-                                        </div>
-                                    ))}
+                                {/* Desktop/Tablet View: Mathematical Strict Rows (Max 2 columns) */}
+                                <div className="hidden md:flex flex-col gap-[2px] md:gap-[4px] w-full max-w-5xl mx-auto">
+                                    {(() => {
+                                        const rows = chunkPhotosForVenue(lightboxPhotos, lightboxRatios);
+                                        let photoIndexCounter = 0;
+
+                                        return rows.map((rowPhotos, rowIndex) => {
+                                            const currentRowIndex = photoIndexCounter;
+                                            photoIndexCounter += rowPhotos.length;
+
+                                            return (
+                                                <div key={`row-${rowIndex}`} className="flex flex-row gap-[2px] md:gap-[4px] w-full items-stretch">
+                                                    {rowPhotos.map((photo: Photo, localIndex: number) => {
+                                                        const ratio = lightboxRatios[photo.id] || 1.5;
+                                                        return (
+                                                            <VenueGalleryItem
+                                                                key={photo.id}
+                                                                photo={photo}
+                                                                preloadedRatio={ratio}
+                                                                onOpenLightbox={() => setFullscreenPhotoIndex(currentRowIndex + localIndex)}
+                                                            />
+                                                        );
+                                                    })}
+                                                </div>
+                                            );
+                                        });
+                                    })()}
                                 </div>
 
                                 {/* Mobile View: 1-column Stack */}
@@ -246,6 +334,45 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+interface VenueGalleryItemProps {
+    photo: Photo;
+    preloadedRatio: number;
+    onOpenLightbox: () => void;
+    key?: React.Key;
+}
+
+function VenueGalleryItem({ photo, preloadedRatio, onOpenLightbox }: VenueGalleryItemProps) {
+    const [aspectRatio, setAspectRatio] = useState<number>(preloadedRatio);
+
+    return (
+        <div
+            className="relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0"
+            style={{
+                flexGrow: aspectRatio * 1000,
+                flexBasis: 0,
+                minWidth: 0
+            }}
+            onClick={onOpenLightbox}
+        >
+            <div className="w-full relative block" style={{ paddingBottom: `${(1 / aspectRatio) * 100}%` }}>
+                <img
+                    loading="lazy"
+                    src={photo.url}
+                    alt=""
+                    onLoad={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        if (img.naturalHeight > 0) {
+                            setAspectRatio(img.naturalWidth / img.naturalHeight);
+                        }
+                    }}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+            </div>
         </div>
     );
 }
