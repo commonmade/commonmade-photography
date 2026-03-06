@@ -38,29 +38,43 @@ function useAspectRatios(photos: Photo[]) {
     return aspectRatios;
 }
 
-// Layout Algorithm: Mathematical Row Builder
-// Guarantees zero vertical or horizontal gaps by using exact flexbox ratios within strict row containers.
+// Layout Algorithm: Dynamic Row Builder
+// Targets 4 items/row or natural combos like 3 Landscapes (L+L+L).
 function chunkPhotosOptimal(photos: Photo[], ratios: Record<string, number>) {
     const rows = [];
     let i = 0;
-    // Desired sequence rhythm: 1 large hero, 2 pair, 2 pair, repeating
-    const rhythm = [1, 2, 2];
-    let rhythmIdx = 0;
+    // Target ratio sum of 4.2 perfectly matches 3 Landscapes (~4.5) or 2 Landscape + 2 Portrait (~4.34)
+    const TARGET_RATIO = 4.2;
 
     while (i < photos.length) {
-        let take = Math.min(rhythm[rhythmIdx % rhythm.length], photos.length - i);
+        let minScore = Infinity;
+        let bestTake = 1;
+        let sum = 0;
 
-        // Prevent a portrait photo from ever being alone on a row (unless it's the very last photo)
-        if (take === 1 && i < photos.length - 1) {
-            const ratio = ratios[photos[i].id] || 1.5;
-            if (ratio <= 1.1) {
-                take = 2;
+        for (let j = 1; j <= 5; j++) {
+            if (i + j - 1 >= photos.length) break;
+
+            sum += ratios[photos[i + j - 1].id] || 1.5;
+            const diff = Math.abs(sum - TARGET_RATIO);
+
+            // Penalize sequences to strongly favor standard 4 items or natural 3 items
+            let penalty = 0;
+            if (j === 1) penalty = 5.0;      // Avoid 1-item rows
+            else if (j === 2) penalty = 3.0; // Avoid 2-item rows
+            else if (j === 3) penalty = 0.5; // Natural for 3 Landscapes (L+L+L)
+            else if (j === 4) penalty = 0.0; // Ideal standard 4 items
+            else if (j >= 5) penalty = 1.5;  // Discourage 5 items
+
+            const score = diff + penalty;
+
+            if (score < minScore) {
+                minScore = score;
+                bestTake = j;
             }
         }
 
-        rows.push(photos.slice(i, i + take));
-        i += take;
-        rhythmIdx++;
+        rows.push(photos.slice(i, i + bestTake));
+        i += bestTake;
     }
 
     return rows;
@@ -140,7 +154,7 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                     ) : (
                         <>
                             {/* Desktop View: Mathematical Strict Rows (Margins = Zero) */}
-                            <div className="hidden md:flex flex-col gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24">
+                            <div className="hidden md:flex flex-col gap-[2px] md:gap-[4px] w-full max-w-[1600px] mx-auto pb-24">
                                 {(() => {
                                     const rows = chunkPhotosOptimal(allPhotos, portfolioRatios);
                                     let photoIndexCounter = 0;
@@ -150,7 +164,7 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                                         photoIndexCounter += rowPhotos.length;
 
                                         return (
-                                            <div key={`row-${rowIndex}`} className="flex flex-row gap-1 md:gap-[6px] w-full items-stretch">
+                                            <div key={`row-${rowIndex}`} className="flex flex-row gap-[2px] md:gap-[4px] w-full items-stretch">
                                                 {rowPhotos.map((photo: Photo, localIndex: number) => {
                                                     const ratio = portfolioRatios[photo.id] || 1.5;
                                                     return (
