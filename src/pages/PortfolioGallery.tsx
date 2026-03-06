@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { getAlbumsByCategory, getPhotosByAlbum, type Photo } from "../lib/firestoreService";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { fadeUpVariant, staggerContainer } from "../lib/animations";
 
 // Hook to preload image aspect ratios so we can confidently group by landscape vs portrait
 function useAspectRatios(photos: Photo[]) {
@@ -131,7 +133,12 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
     }, [fullscreenPhotoIndex, nextFullscreen, prevFullscreen]);
 
     return (
-        <div className="w-full animate-in fade-in duration-1000">
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="w-full"
+        >
             <div className="text-center mb-16 md:mb-24 px-4">
                 <h2 className="logo-font text-sm md:text-lg tracking-widest uppercase font-light text-black">
                     {category}
@@ -154,7 +161,13 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                     ) : (
                         <>
                             {/* Desktop View: Mathematical Strict Rows (Margins = Zero) */}
-                            <div className="hidden md:flex flex-col gap-[2px] md:gap-[4px] w-full max-w-[1600px] mx-auto pb-24">
+                            <motion.div
+                                variants={staggerContainer}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, amount: 0.1 }}
+                                className="hidden md:flex flex-col gap-[2px] md:gap-[4px] w-full max-w-[1600px] mx-auto pb-24"
+                            >
                                 {(() => {
                                     const rows = chunkPhotosOptimal(allPhotos, portfolioRatios);
                                     let photoIndexCounter = 0;
@@ -164,7 +177,11 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                                         photoIndexCounter += rowPhotos.length;
 
                                         return (
-                                            <div key={`row-${rowIndex}`} className="flex flex-row gap-[2px] md:gap-[4px] w-full items-stretch">
+                                            <motion.div
+                                                variants={fadeUpVariant}
+                                                key={`row-${rowIndex}`}
+                                                className="flex flex-row gap-[2px] md:gap-[4px] w-full items-stretch"
+                                            >
                                                 {rowPhotos.map((photo: Photo, localIndex: number) => {
                                                     const ratio = portfolioRatios[photo.id] || 1.5;
                                                     return (
@@ -176,16 +193,23 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                                                         />
                                                     );
                                                 })}
-                                            </div>
+                                            </motion.div>
                                         );
                                     });
                                 })()}
-                            </div>
+                            </motion.div>
 
                             {/* Mobile View: 1-column Stack (Original aspect ratio) */}
-                            <div className="flex flex-col md:hidden gap-0">
+                            <motion.div
+                                variants={staggerContainer}
+                                initial="hidden"
+                                whileInView="visible"
+                                viewport={{ once: true, amount: 0.1 }}
+                                className="flex flex-col md:hidden gap-0"
+                            >
                                 {allPhotos.map((photo: Photo, i: number) => (
-                                    <div
+                                    <motion.div
+                                        variants={fadeUpVariant}
                                         key={photo.id}
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -199,9 +223,9 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                                             alt=""
                                             className="w-full h-auto block"
                                         />
-                                    </div>
+                                    </motion.div>
                                 ))}
-                            </div>
+                            </motion.div>
                         </>
                     )}
                 </div>
@@ -233,7 +257,7 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                     </div>
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 }
 

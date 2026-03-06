@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { getHomeContent, type HomeContent } from "../lib/firestoreService";
+import { motion } from "framer-motion";
+import { fadeUpVariant, staggerContainer } from "../lib/animations";
 
 const DEFAULT_CONTENT: HomeContent = {
   quote: "",
@@ -39,10 +41,16 @@ export default function Home() {
   }
 
   return (
-    <div className="w-full animate-in fade-in duration-700">
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.1 }}
+      variants={staggerContainer}
+      className="w-full"
+    >
       <div className="flex flex-col md:flex-row gap-12 md:gap-16 lg:gap-24 items-center">
         {/* Left: Text Content */}
-        <div className="flex-1 flex flex-col items-center text-center py-4 md:py-8">
+        <motion.div variants={fadeUpVariant} className="flex-1 flex flex-col items-center text-center py-4 md:py-8">
           {content.quote && (
             <h2 className="text-lg md:text-xl lg:text-2xl font-light text-gray-800 mb-6 md:mb-8 leading-relaxed tracking-tight">
               "{content.quote}"
@@ -79,11 +87,11 @@ export default function Home() {
               )}
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Right: Image */}
         {content.imageUrl && (
-          <div className="w-full md:w-[45%] lg:w-[42%] flex-shrink-0">
+          <motion.div variants={fadeUpVariant} className="w-full md:w-[45%] lg:w-[42%] flex-shrink-0">
             <img
               src={content.imageUrl}
               alt="Home visual"
@@ -92,9 +100,9 @@ export default function Home() {
               className="w-full h-auto object-cover"
               style={{ maxHeight: "75vh" }}
             />
-          </div>
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { getAlbumsByCategory, getPhotosByAlbum, type Photo, type Album } from "../lib/firestoreService";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { fadeUpVariant, staggerContainer } from "../lib/animations";
 
 // Hook to preload image aspect ratios
 function useAspectRatios(photos: Photo[]) {
@@ -177,7 +179,13 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
     }, [fullscreenPhotoIndex, selectedAlbum, nextFullscreen, prevFullscreen, closeDetailView]);
 
     return (
-        <div className="w-full animate-in fade-in duration-1000" onClick={() => setActiveMobileId(null)}>
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="w-full"
+            onClick={() => setActiveMobileId(null)}
+        >
             <div className="text-center mb-16 md:mb-24 px-4">
                 <h2 className="logo-font text-sm md:text-lg tracking-widest uppercase font-light text-black">
                     {category}
@@ -193,7 +201,13 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
 
             {/* Album Grid */}
             {!loading && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 px-4 md:px-0 max-w-5xl mx-auto pb-32">
+                <motion.div
+                    variants={staggerContainer}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.1 }}
+                    className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-6 px-4 md:px-0 max-w-5xl mx-auto pb-32"
+                >
                     {albums.length === 0 ? (
                         <div className="text-center py-32 text-gray-400 text-sm tracking-widest uppercase col-span-1 md:col-span-2">
                             No albums yet
@@ -209,7 +223,8 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                                 : "translate-y-4 lg:group-hover:translate-y-0";
 
                             return (
-                                <div
+                                <motion.div
+                                    variants={fadeUpVariant}
                                     key={album.id}
                                     onClick={(e) => handleAlbumClick(e, album)}
                                     className="group cursor-pointer relative overflow-hidden bg-gray-50 aspect-[3/4]"
@@ -238,11 +253,11 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                                             <div className={`w-8 h-[1px] bg-white/50 mt-4 transform transition-transform duration-500 delay-100 ${transformClass}`}></div>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             )
                         })
                     )}
-                </div>
+                </motion.div>
             )}
 
             {/* Album Detail Scroll View Overlay */}
@@ -261,7 +276,13 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                         ) : (
                             <>
                                 {/* Desktop/Tablet View: Mathematical Strict Rows (Max 2 columns) */}
-                                <div className="hidden md:flex flex-col gap-[2px] md:gap-[4px] w-full max-w-5xl mx-auto">
+                                <motion.div
+                                    variants={staggerContainer}
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: true, amount: 0.1 }}
+                                    className="hidden md:flex flex-col gap-[2px] md:gap-[4px] w-full max-w-5xl mx-auto"
+                                >
                                     {(() => {
                                         const rows = chunkPhotosForVenue(lightboxPhotos, lightboxRatios);
                                         let photoIndexCounter = 0;
@@ -271,7 +292,11 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                                             photoIndexCounter += rowPhotos.length;
 
                                             return (
-                                                <div key={`row-${rowIndex}`} className="flex flex-row gap-[2px] md:gap-[4px] w-full items-stretch">
+                                                <motion.div
+                                                    variants={fadeUpVariant}
+                                                    key={`row-${rowIndex}`}
+                                                    className="flex flex-row gap-[2px] md:gap-[4px] w-full items-stretch"
+                                                >
                                                     {rowPhotos.map((photo: Photo, localIndex: number) => {
                                                         const ratio = lightboxRatios[photo.id] || 1.5;
                                                         return (
@@ -283,16 +308,23 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                                                             />
                                                         );
                                                     })}
-                                                </div>
+                                                </motion.div>
                                             );
                                         });
                                     })()}
-                                </div>
+                                </motion.div>
 
                                 {/* Mobile View: 1-column Stack */}
-                                <div className="flex flex-col md:hidden gap-[2px] cursor-zoom-in w-full max-w-5xl mx-auto">
+                                <motion.div
+                                    variants={staggerContainer}
+                                    initial="hidden"
+                                    whileInView="visible"
+                                    viewport={{ once: true, amount: 0.1 }}
+                                    className="flex flex-col md:hidden gap-[2px] cursor-zoom-in w-full max-w-5xl mx-auto"
+                                >
                                     {lightboxPhotos.map((photo, i) => (
-                                        <img
+                                        <motion.img
+                                            variants={fadeUpVariant}
                                             key={photo.id}
                                             loading="lazy"
                                             src={photo.url}
@@ -301,7 +333,7 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                                             className="w-full h-auto object-cover mb-[2px] shadow-sm bg-gray-50 hover:opacity-95 transition-opacity duration-300 break-inside-avoid"
                                         />
                                     ))}
-                                </div>
+                                </motion.div>
                             </>
                         )}
                     </div>
@@ -334,7 +366,7 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                     </div>
                 </div>
             )}
-        </div>
+        </motion.div>
     );
 }
 
