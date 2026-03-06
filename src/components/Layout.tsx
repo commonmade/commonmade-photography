@@ -57,9 +57,8 @@ export default function Layout() {
 
   // Load kakao channel URL from siteConfig
   useEffect(() => {
-    getSiteConfig().then((cfg) => {
-      if (cfg.kakao && cfg.kakao !== "#") setKakaoUrl(cfg.kakao);
-    }).catch(() => { });
+    // Force the new open chat URL
+    setKakaoUrl("https://open.kakao.com/o/sF6Jm5ji");
   }, []);
 
   // Handle scroll effect for sticky header

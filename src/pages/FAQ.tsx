@@ -127,7 +127,7 @@ export default function FAQ() {
             <img
               src="/kakao-banner.png"
               alt="카카오톡 상담연결"
-              className="w-full max-w-[280px] h-auto rounded-xl shadow-sm"
+              className="w-full max-w-[170px] h-auto rounded-xl shadow-sm"
             />
           </a>
         </div>
