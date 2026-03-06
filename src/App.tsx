@@ -2,7 +2,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import MainSlider from "./components/MainSlider";
-import Gallery from "./pages/Gallery";
+import PortfolioGallery from "./pages/PortfolioGallery";
+import VenueGallery from "./pages/VenueGallery";
 import Product from "./pages/Product";
 import FAQ from "./pages/FAQ";
 import Contact from "./pages/Contact";
@@ -19,8 +20,8 @@ export default function App() {
         <Route path="/" element={<Layout />}>
           <Route index element={<MainSlider />} />
           <Route path="about" element={<Home />} />
-          <Route path="portfolio" element={<Gallery category="Portfolio" categorySlug="portfolio" />} />
-          <Route path="venue" element={<Gallery category="Venue" categorySlug="venue" />} />
+          <Route path="portfolio" element={<PortfolioGallery category="Portfolio" />} />
+          <Route path="venue" element={<VenueGallery category="Venue" categorySlug="venue" />} />
           <Route path="product" element={<Product />} />
           <Route path="faq" element={<FAQ />} />
           <Route path="contact" element={<Contact />} />

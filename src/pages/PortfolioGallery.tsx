@@ -1,0 +1,263 @@
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { getAlbumsByCategory, getPhotosByAlbum, type Photo } from "../lib/firestoreService";
+import { ArrowLeft, ArrowRight, X } from "lucide-react";
+
+// Hook to preload image aspect ratios so we can confidently group by landscape vs portrait
+function useAspectRatios(photos: Photo[]) {
+    const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
+
+    useEffect(() => {
+        if (photos.length === 0) {
+            setAspectRatios({});
+            return;
+        }
+
+        const newRatios: Record<string, number> = {};
+        let loadedCount = 0;
+
+        photos.forEach(photo => {
+            const img = new Image();
+            img.src = photo.url;
+            img.onload = () => {
+                newRatios[photo.id] = img.naturalWidth / img.naturalHeight;
+                loadedCount++;
+                if (loadedCount === photos.length) {
+                    setAspectRatios(prev => ({ ...prev, ...newRatios }));
+                }
+            };
+            img.onerror = () => {
+                newRatios[photo.id] = 1.5;
+                loadedCount++;
+                if (loadedCount === photos.length) {
+                    setAspectRatios(prev => ({ ...prev, ...newRatios }));
+                }
+            };
+        });
+    }, [photos]);
+
+    return aspectRatios;
+}
+
+// Layout Algorithm: Mathematical Row Builder
+// Guarantees zero vertical or horizontal gaps by using exact flexbox ratios within strict row containers.
+function chunkPhotosOptimal(photos: Photo[], ratios: Record<string, number>) {
+    const rows = [];
+    let i = 0;
+    // Desired sequence rhythm: 1 large hero, 2 pair, 2 pair, repeating
+    const rhythm = [1, 2, 2];
+    let rhythmIdx = 0;
+
+    while (i < photos.length) {
+        let take = Math.min(rhythm[rhythmIdx % rhythm.length], photos.length - i);
+
+        // Prevent a portrait photo from ever being alone on a row (unless it's the very last photo)
+        if (take === 1 && i < photos.length - 1) {
+            const ratio = ratios[photos[i].id] || 1.5;
+            if (ratio <= 1.1) {
+                take = 2;
+            }
+        }
+
+        rows.push(photos.slice(i, i + take));
+        i += take;
+        rhythmIdx++;
+    }
+
+    return rows;
+}
+
+interface PortfolioGalleryProps {
+    category: string;
+}
+
+export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
+    const [allPhotos, setAllPhotos] = useState<Photo[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [fullscreenPhotoIndex, setFullscreenPhotoIndex] = useState<number | null>(null);
+
+    const emptyPhotos = useMemo(() => [], []);
+    const portfolioRatios = useAspectRatios(allPhotos.length > 0 ? allPhotos : emptyPhotos);
+
+    useEffect(() => {
+        setLoading(true);
+        getAlbumsByCategory("portfolio")
+            .then(async (fetchedAlbums) => {
+                const photoPromises = fetchedAlbums.map(album => getPhotosByAlbum(album.id));
+                const photosArrays = await Promise.all(photoPromises);
+                setAllPhotos(photosArrays.flat());
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
+
+    const closeFullscreen = () => setFullscreenPhotoIndex(null);
+
+    const nextFullscreen = useCallback(() => {
+        setFullscreenPhotoIndex((prev) =>
+            prev === null ? null : (prev + 1) % allPhotos.length
+        );
+    }, [allPhotos.length]);
+
+    const prevFullscreen = useCallback(() => {
+        setFullscreenPhotoIndex((prev) =>
+            prev === null ? null : (prev - 1 + allPhotos.length) % allPhotos.length
+        );
+    }, [allPhotos.length]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (fullscreenPhotoIndex !== null) {
+                if (e.key === "Escape") closeFullscreen();
+                if (e.key === "ArrowRight") nextFullscreen();
+                if (e.key === "ArrowLeft") prevFullscreen();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [fullscreenPhotoIndex, nextFullscreen, prevFullscreen]);
+
+    return (
+        <div className="w-full animate-in fade-in duration-1000">
+            <div className="text-center mb-16 md:mb-24 px-4">
+                <h2 className="logo-font text-sm md:text-lg tracking-widest uppercase font-light text-black">
+                    {category}
+                </h2>
+                <div className="w-12 h-[1px] bg-gray-300 mx-auto mt-8"></div>
+            </div>
+
+            {loading && (
+                <div className="flex justify-center items-center py-32">
+                    <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
+                </div>
+            )}
+
+            {!loading && (
+                <div className="px-0 w-full pb-24">
+                    {allPhotos.length === 0 ? (
+                        <div className="text-center py-32 text-gray-400 text-sm tracking-widest uppercase">
+                            No photos in portfolio yet
+                        </div>
+                    ) : (
+                        <>
+                            {/* Desktop View: Mathematical Strict Rows (Margins = Zero) */}
+                            <div className="hidden md:flex flex-col gap-1 md:gap-[6px] w-full max-w-[1600px] mx-auto pb-24">
+                                {(() => {
+                                    const rows = chunkPhotosOptimal(allPhotos, portfolioRatios);
+                                    let photoIndexCounter = 0;
+
+                                    return rows.map((rowPhotos, rowIndex) => {
+                                        const currentRowIndex = photoIndexCounter;
+                                        photoIndexCounter += rowPhotos.length;
+
+                                        return (
+                                            <div key={`row-${rowIndex}`} className="flex flex-row gap-1 md:gap-[6px] w-full items-stretch">
+                                                {rowPhotos.map((photo: Photo, localIndex: number) => {
+                                                    const ratio = portfolioRatios[photo.id] || 1.5;
+                                                    return (
+                                                        <PortfolioItem
+                                                            key={photo.id}
+                                                            photo={photo}
+                                                            preloadedRatio={ratio}
+                                                            onOpenLightbox={() => setFullscreenPhotoIndex(currentRowIndex + localIndex)}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        );
+                                    });
+                                })()}
+                            </div>
+
+                            {/* Mobile View: 1-column Stack (Original aspect ratio) */}
+                            <div className="flex flex-col md:hidden gap-0">
+                                {allPhotos.map((photo: Photo, i: number) => (
+                                    <div
+                                        key={photo.id}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setFullscreenPhotoIndex(i);
+                                        }}
+                                        className="relative w-full overflow-hidden bg-gray-50 cursor-zoom-in"
+                                    >
+                                        <img
+                                            loading="lazy"
+                                            src={photo.url}
+                                            alt=""
+                                            className="w-full h-auto block"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* Fullscreen Photo Lightbox */}
+            {fullscreenPhotoIndex !== null && allPhotos[fullscreenPhotoIndex] && (
+                <div className="fixed inset-0 z-[150] bg-white/70 backdrop-blur-sm flex flex-col animate-in fade-in duration-300" onClick={closeFullscreen}>
+                    <button onClick={(e) => { e.stopPropagation(); closeFullscreen(); }} className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center justify-center w-[44px] h-[34px] text-black border border-black/80 hover:bg-black/5 rounded-sm transition-all z-[160]"><X size={26} strokeWidth={1.2} /></button>
+
+                    <div className="absolute top-0 left-0 w-1/4 h-full z-[155] cursor-w-resize flex items-center justify-start group" onClick={(e) => { e.stopPropagation(); prevFullscreen(); }}>
+                        <button className="p-4 text-black/20 lg:group-hover:text-black/60 transition-colors ml-2 md:ml-6"><ArrowLeft size={36} strokeWidth={1.5} /></button>
+                    </div>
+                    <div className="absolute top-0 right-0 w-1/4 h-full z-[155] cursor-e-resize flex items-center justify-end group" onClick={(e) => { e.stopPropagation(); nextFullscreen(); }}>
+                        <button className="p-4 text-black/20 lg:group-hover:text-black/60 transition-colors mr-2 md:mr-6"><ArrowRight size={36} strokeWidth={1.5} /></button>
+                    </div>
+
+                    <div className="flex-1 flex items-center justify-center p-6 md:p-12 w-full h-full">
+                        <img
+                            key={fullscreenPhotoIndex}
+                            src={allPhotos[fullscreenPhotoIndex].url}
+                            alt=""
+                            className="max-w-[90vw] md:max-w-[85vw] max-h-[85vh] object-contain select-none shadow-sm animate-in zoom-in-95 duration-500"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-black/40 text-[10px] tracking-[0.2em] font-light">
+                        {fullscreenPhotoIndex + 1} / {allPhotos.length}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+interface PortfolioItemProps {
+    photo: Photo;
+    preloadedRatio: number;
+    onOpenLightbox: () => void;
+    key?: React.Key;
+}
+
+function PortfolioItem({ photo, preloadedRatio, onOpenLightbox }: PortfolioItemProps) {
+    const [aspectRatio, setAspectRatio] = useState<number>(preloadedRatio);
+
+    return (
+        <div
+            className="relative group cursor-zoom-in overflow-hidden bg-gray-50 flex-shrink-0"
+            style={{
+                flexGrow: aspectRatio * 1000,
+                flexBasis: 0,
+                minWidth: 0
+            }}
+            onClick={onOpenLightbox}
+        >
+            <div className="w-full relative block" style={{ paddingBottom: `${(1 / aspectRatio) * 100}%` }}>
+                <img
+                    loading="lazy"
+                    src={photo.url}
+                    alt=""
+                    onLoad={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        if (img.naturalHeight > 0) {
+                            setAspectRatio(img.naturalWidth / img.naturalHeight);
+                        }
+                    }}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-500" />
+            </div>
+        </div>
+    );
+}
