@@ -13,7 +13,7 @@ export default function KakaoChatButton({ chatUrl }: KakaoChatButtonProps) {
 
     return (
         <a
-            href={chatUrl}
+            href={finalUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 bg-[#FEE500] hover:bg-[#F4DC00] text-[#000000] rounded-full shadow-lg transition-transform hover:scale-110 focus:outline-none"
