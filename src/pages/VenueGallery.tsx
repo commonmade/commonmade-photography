@@ -150,19 +150,26 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
     };
 
     // --- Fullscreen Lightbox Handlers ---
-    const closeFullscreen = () => setFullscreenPhotoIndex(null);
+    const closeFullscreen = () => {
+        setFullscreenPhotoIndex(null);
+        setDragProgress(0);
+    };
 
     const nextFullscreen = useCallback(() => {
         setFullscreenPhotoIndex((prev) =>
             prev === null ? null : (prev + 1) % lightboxPhotos.length
         );
+        setDragProgress(0);
     }, [lightboxPhotos.length]);
 
     const prevFullscreen = useCallback(() => {
         setFullscreenPhotoIndex((prev) =>
             prev === null ? null : (prev - 1 + lightboxPhotos.length) % lightboxPhotos.length
         );
+        setDragProgress(0);
     }, [lightboxPhotos.length]);
+
+    const [dragProgress, setDragProgress] = useState(0);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -342,26 +349,41 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
 
             {/* Fullscreen Photo Lightbox */}
             {fullscreenPhotoIndex !== null && lightboxPhotos[fullscreenPhotoIndex] && (
-                <div className="fixed inset-0 z-[150] bg-white/70 backdrop-blur-sm flex flex-col animate-in fade-in duration-300" onClick={closeFullscreen}>
-                    <button onClick={(e) => { e.stopPropagation(); closeFullscreen(); }} className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center justify-center w-[44px] h-[34px] text-black border border-black/80 hover:bg-black/5 rounded-sm transition-all z-[160]"><X size={26} strokeWidth={1.2} /></button>
+                <div className="fixed inset-0 z-[150] bg-white/90 backdrop-blur-md flex flex-col animate-in fade-in duration-300 overflow-hidden" onClick={closeFullscreen}>
+                    <button onClick={(e) => { e.stopPropagation(); closeFullscreen(); }} className="absolute top-4 right-4 md:top-6 md:right-6 flex items-center justify-center w-[44px] h-[34px] text-black border border-black/80 hover:bg-black/5 rounded-sm transition-all z-[170]"><X size={26} strokeWidth={1.2} /></button>
 
-                    <div className="absolute top-0 left-0 w-1/4 h-full z-[155] cursor-w-resize flex items-center justify-start group" onClick={(e) => { e.stopPropagation(); prevFullscreen(); }}>
+                    <div className="absolute top-0 left-0 w-1/4 h-full z-[160] cursor-w-resize hidden md:flex items-center justify-start group" onClick={(e) => { e.stopPropagation(); prevFullscreen(); }}>
                         <button className="p-4 text-black/20 lg:group-hover:text-black/60 transition-colors ml-2 md:ml-6"><ArrowLeft size={36} strokeWidth={1.5} /></button>
                     </div>
-                    <div className="absolute top-0 right-0 w-1/4 h-full z-[155] cursor-e-resize flex items-center justify-end group" onClick={(e) => { e.stopPropagation(); nextFullscreen(); }}>
+                    <div className="absolute top-0 right-0 w-1/4 h-full z-[160] cursor-e-resize hidden md:flex items-center justify-end group" onClick={(e) => { e.stopPropagation(); nextFullscreen(); }}>
                         <button className="p-4 text-black/20 lg:group-hover:text-black/60 transition-colors mr-2 md:mr-6"><ArrowRight size={36} strokeWidth={1.5} /></button>
                     </div>
 
-                    <div className="flex-1 flex items-center justify-center p-6 md:p-12 w-full h-full">
-                        <img
+                    <div className="flex-1 flex items-center justify-center p-0 md:p-12 w-full h-full relative touch-none">
+                        <motion.img
                             key={fullscreenPhotoIndex}
                             src={lightboxPhotos[fullscreenPhotoIndex].url}
                             alt=""
-                            className="max-w-[90vw] md:max-w-[85vw] max-h-[85vh] object-contain select-none shadow-sm animate-in zoom-in-95 duration-500"
+                            drag="x"
+                            dragConstraints={{ left: 0, right: 0 }}
+                            dragElastic={0.6}
+                            onDrag={(e, info) => setDragProgress(info.offset.x)}
+                            onDragEnd={(e, info) => {
+                                const swipe = info.offset.x;
+                                const threshold = window.innerWidth * 0.2;
+                                if (swipe < -threshold) nextFullscreen();
+                                else if (swipe > threshold) prevFullscreen();
+                                else setDragProgress(0);
+                            }}
+                            initial={{ opacity: 0, x: dragProgress > 0 ? -100 : 100 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: dragProgress > 0 ? 100 : -100 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="max-w-full md:max-w-[85vw] max-h-[90vh] md:max-h-[85vh] object-contain select-none shadow-sm cursor-grab active:cursor-grabbing"
                             onClick={(e) => e.stopPropagation()}
                         />
                     </div>
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-black/40 text-[10px] tracking-[0.2em] font-light">
+                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 text-black/40 text-[10px] tracking-[0.2em] font-light z-[160]">
                         {fullscreenPhotoIndex + 1} / {lightboxPhotos.length}
                     </div>
                 </div>

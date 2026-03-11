@@ -76,7 +76,7 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className="flex flex-col bg-white min-h-screen">
+    <div className="flex flex-col bg-white min-h-screen overflow-x-hidden">
       {/* Header */}
       <header
         className={`w-full px-6 md:px-12 flex flex-col items-center justify-center relative z-40 transition-all duration-300 fixed top-0 bg-white/90 backdrop-blur-md shadow-sm ${isScrolled ? "py-2" : "py-4 md:py-6"
@@ -133,35 +133,34 @@ export default function Layout() {
 
       {/* Mobile Navigation Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center space-y-8 md:hidden">
+        <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center space-y-12 md:hidden animate-in fade-in slide-in-from-top-4 duration-300">
           <button
-            className="absolute top-10 left-6 text-gray-900"
+            className="absolute top-10 left-6 text-gray-900 p-2 hover:bg-gray-100 rounded-full transition-colors"
             onClick={() => setIsMobileMenuOpen(false)}
           >
-            <X size={24} />
+            <X size={28} strokeWidth={1.5} />
           </button>
 
-          <div className="flex flex-col items-center space-y-6">
-            {navLinks.map((link) => (
+          <div className="flex flex-col items-center space-y-10 w-full px-12">
+            {navLinks.map((link, index) => (
               <Link
                 key={link.name}
                 to={link.path}
-                className={`group relative flex items-center justify-center text-sm uppercase tracking-widest ${location.pathname === link.path
-                  ? "text-black font-medium"
-                  : "text-gray-500"
+                style={{ animationDelay: `${index * 50}ms` }}
+                className={`flex items-center justify-center text-xl uppercase tracking-[0.3em] font-light py-2 w-full border-b border-gray-50 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${location.pathname === link.path
+                  ? "text-black font-medium border-black/10"
+                  : "text-gray-900 hover:text-black"
                   }`}
               >
-                <span className="block group-hover:opacity-0 transition-opacity duration-300">
-                  {link.name}
-                </span>
-                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity duration-300 whitespace-nowrap">
-                  {link.hoverName}
-                </span>
+                {link.name}
               </Link>
             ))}
           </div>
 
-
+          <div className="pt-12 flex flex-col items-center">
+            <p className="text-[10px] tracking-[0.4em] uppercase text-gray-400 mb-4">Photography</p>
+            <h2 className="logo-font text-2xl tracking-widest uppercase text-black">commonmade</h2>
+          </div>
         </div>
       )}
 
