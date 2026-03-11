@@ -147,7 +147,7 @@ export default function Layout() {
                 key={link.name}
                 to={link.path}
                 style={{ animationDelay: `${index * 50}ms` }}
-                className={`flex items-center justify-center text-xl uppercase tracking-[0.3em] font-light py-2 w-full border-b border-gray-50 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${location.pathname === link.path
+                className={`flex items-center justify-center text-base uppercase tracking-[0.3em] font-light py-2 w-full border-b border-gray-50 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${location.pathname === link.path
                   ? "text-black font-medium border-black/10"
                   : "text-gray-900 hover:text-black"
                   }`}

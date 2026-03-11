@@ -212,7 +212,7 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                                 initial="hidden"
                                 whileInView="visible"
                                 viewport={{ once: true, amount: 0.1 }}
-                                className="flex flex-col md:hidden gap-[2px]"
+                                className="flex flex-col md:hidden gap-[5px]"
                             >
                                 {allPhotos.map((photo: Photo, i: number) => (
                                     <motion.div
