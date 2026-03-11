@@ -6,6 +6,7 @@ import {
     type HomeContent,
 } from "../../lib/firestoreService";
 import { Check, Loader, Upload, Image as ImageIcon } from "lucide-react";
+import { compressImage } from "../../lib/imageCompression";
 
 const DEFAULT: HomeContent = {
     quote: "",
@@ -42,7 +43,8 @@ export default function HomeManager() {
         setUploading(true);
         setUploadProgress(0);
         try {
-            const url = await uploadHomeImage(file, (p) => setUploadProgress(p));
+            const compressedFile = await compressImage(file);
+            const url = await uploadHomeImage(compressedFile, (p) => setUploadProgress(p));
             setContent((prev) => ({ ...prev, imageUrl: url }));
         } finally {
             setUploading(false);
