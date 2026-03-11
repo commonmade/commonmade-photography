@@ -133,7 +133,7 @@ export default function Layout() {
 
       {/* Mobile Navigation Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-center space-y-12 md:hidden animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="fixed inset-0 z-[200] bg-white flex flex-col items-center justify-start pt-[15vh] space-y-10 md:hidden animate-in fade-in slide-in-from-top-4 duration-300">
           <button
             className="absolute top-10 left-6 text-gray-900 p-2 hover:bg-gray-100 rounded-full transition-colors"
             onClick={() => setIsMobileMenuOpen(false)}
@@ -141,13 +141,13 @@ export default function Layout() {
             <X size={28} strokeWidth={1.5} />
           </button>
 
-          <div className="flex flex-col items-center space-y-10 w-full px-12">
+          <div className="flex flex-col items-center space-y-7 w-full px-12">
             {navLinks.map((link, index) => (
               <Link
                 key={link.name}
                 to={link.path}
                 style={{ animationDelay: `${index * 50}ms` }}
-                className={`flex items-center justify-center text-base uppercase tracking-[0.3em] font-light py-2 w-full border-b border-gray-50 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${location.pathname === link.path
+                className={`flex items-center justify-center text-base uppercase tracking-[0.3em] font-light py-1 w-full border-b border-gray-50 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${location.pathname === link.path
                   ? "text-black font-medium border-black/10"
                   : "text-gray-900 hover:text-black"
                   }`}
@@ -157,7 +157,7 @@ export default function Layout() {
             ))}
           </div>
 
-          <div className="pt-12 flex flex-col items-center">
+          <div className="pt-8 flex flex-col items-center">
             <p className="text-[10px] tracking-[0.4em] uppercase text-gray-400 mb-4">Photography</p>
             <h2 className="logo-font text-2xl tracking-widest uppercase text-black">commonmade</h2>
           </div>
