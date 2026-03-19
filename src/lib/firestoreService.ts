@@ -488,3 +488,37 @@ export async function uploadHomeImage(
     });
 }
 
+// ─── Schedules ─────────────────────────────────────────────────────────────
+
+export type ScheduleCategory = "촬영예정" | "촬영완료" | "메일발송" | "메일수신" | "앨범제작" | "출고완료";
+
+export interface Schedule {
+    id: string;
+    title: string;
+    date: string; // YYYY-MM-DD
+    memo: string;
+    category?: ScheduleCategory;
+    createdAt: number;
+}
+
+export async function getSchedules(): Promise<Schedule[]> {
+    const q = query(collection(db, "schedules"), orderBy("date", "asc"));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Schedule));
+}
+
+export async function addSchedule(data: Omit<Schedule, "id" | "createdAt">): Promise<string> {
+    const docRef = await addDoc(collection(db, "schedules"), {
+        ...data,
+        createdAt: Date.now(),
+    });
+    return docRef.id;
+}
+
+export async function updateSchedule(id: string, data: Partial<Schedule>): Promise<void> {
+    await updateDoc(doc(db, "schedules", id), data);
+}
+
+export async function deleteSchedule(id: string): Promise<void> {
+    await deleteDoc(doc(db, "schedules", id));
+}
