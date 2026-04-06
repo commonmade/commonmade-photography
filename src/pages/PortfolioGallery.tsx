@@ -196,6 +196,7 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                                                             key={photo.id}
                                                             photo={photo}
                                                             preloadedRatio={ratio}
+                                                            index={currentRowIndex + localIndex}
                                                             onOpenLightbox={() => setFullscreenPhotoIndex(currentRowIndex + localIndex)}
                                                         />
                                                     );
@@ -225,7 +226,8 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                                         className="relative w-full overflow-hidden bg-gray-50 cursor-zoom-in"
                                     >
                                         <img
-                                            loading="lazy"
+                                            loading={i < 4 ? "eager" : "lazy"}
+                                            fetchPriority={i < 4 ? "high" : "auto"}
                                             src={photo.url}
                                             alt=""
                                             className="w-full h-auto block"
@@ -269,7 +271,7 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
                             initial={{ opacity: 0, x: dragProgress > 0 ? -100 : 100 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: dragProgress > 0 ? 100 : -100 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            transition={{ type: "tween", duration: 0.3, ease: "easeInOut" }}
                             className="max-w-full md:max-w-[85vw] max-h-[90vh] md:max-h-[85vh] object-contain select-none shadow-sm cursor-grab active:cursor-grabbing"
                             onClick={(e) => e.stopPropagation()}
                         />
@@ -286,11 +288,12 @@ export default function PortfolioGallery({ category }: PortfolioGalleryProps) {
 interface PortfolioItemProps {
     photo: Photo;
     preloadedRatio: number;
+    index: number;
     onOpenLightbox: () => void;
     key?: React.Key;
 }
 
-function PortfolioItem({ photo, preloadedRatio, onOpenLightbox }: PortfolioItemProps) {
+function PortfolioItem({ photo, preloadedRatio, index, onOpenLightbox }: PortfolioItemProps) {
     const [aspectRatio, setAspectRatio] = useState<number>(preloadedRatio);
 
     return (
@@ -305,7 +308,8 @@ function PortfolioItem({ photo, preloadedRatio, onOpenLightbox }: PortfolioItemP
         >
             <div className="w-full relative block" style={{ paddingBottom: `${(1 / aspectRatio) * 100}%` }}>
                 <img
-                    loading="lazy"
+                    loading={index < 4 ? "eager" : "lazy"}
+                    fetchPriority={index < 4 ? "high" : "auto"}
                     src={photo.url}
                     alt=""
                     onLoad={(e) => {

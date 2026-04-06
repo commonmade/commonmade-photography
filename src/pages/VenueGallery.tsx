@@ -378,7 +378,7 @@ export default function VenueGallery({ category, categorySlug }: VenueGalleryPro
                             initial={{ opacity: 0, x: dragProgress > 0 ? -100 : 100 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: dragProgress > 0 ? 100 : -100 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            transition={{ type: "tween", duration: 0.3, ease: "easeInOut" }}
                             className="max-w-full md:max-w-[85vw] max-h-[90vh] md:max-h-[85vh] object-contain select-none shadow-sm cursor-grab active:cursor-grabbing"
                             onClick={(e) => e.stopPropagation()}
                         />

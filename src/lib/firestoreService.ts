@@ -357,10 +357,19 @@ export interface MainSlide {
     order: number;
 }
 
+// 세션 캐시: 브라우저 새로고침 전까지 재사용
+let _mainSlidesCache: MainSlide[] | null = null;
+
 export async function getMainSlides(): Promise<MainSlide[]> {
+    if (_mainSlidesCache) return _mainSlidesCache;
     const snap = await getDocs(collection(db, "mainSlides"));
     const slides = snap.docs.map((d) => ({ id: d.id, ...d.data() } as MainSlide));
-    return slides.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    _mainSlidesCache = slides.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    return _mainSlidesCache;
+}
+
+export function invalidateMainSlidesCache(): void {
+    _mainSlidesCache = null;
 }
 
 export async function uploadMainSlide(
@@ -387,6 +396,7 @@ export async function uploadMainSlide(
                     filename,
                     order,
                 });
+                invalidateMainSlidesCache(); // 업로드 후 캐시 무효화
                 resolve({ id: docRef.id, url, filename, order });
             }
         );
@@ -401,11 +411,13 @@ export async function deleteMainSlide(id: string, url: string): Promise<void> {
         console.warn("Storage 삭제 실패 (무시):", err);
     }
     await deleteDoc(doc(db, "mainSlides", id));
+    invalidateMainSlidesCache(); // 삭제 후 캐시 무효화
     console.log("슬라이드 삭제 완료:", id);
 }
 
 export async function updateMainSlideOrder(id: string, order: number): Promise<void> {
     await updateDoc(doc(db, "mainSlides", id), { order });
+    invalidateMainSlidesCache(); // 순서 변경 후 캐시 무효화
 }
 
 // ─── Seed Data ─────────────────────────────────────────────────────────────

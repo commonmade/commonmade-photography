@@ -36,7 +36,7 @@ function KakaoIcon({ size = 20 }: { size?: number }) {
 }
 
 const navLinks = [
-  { name: "ABOUT US", hoverName: "커먼메이드", path: "/about" },
+  { name: "ABOUT US", hoverName: "그날의 기록", path: "/about" },
   { name: "Portfolio", hoverName: "본식 스냅", path: "/portfolio" },
   { name: "Venue", hoverName: "장소", path: "/venue" },
   { name: "Product", hoverName: "상품구성", path: "/product" },
@@ -79,38 +79,21 @@ export default function Layout() {
     <div className="flex flex-col bg-white min-h-screen overflow-x-hidden">
       {/* Header */}
       <header
-        className={`w-full px-6 md:px-12 flex flex-col items-center justify-center relative z-40 transition-all duration-300 fixed top-0 bg-white/90 backdrop-blur-md shadow-sm ${isScrolled ? "py-2" : "py-4 md:py-6"
-          }`}
+        className={`w-full px-6 md:px-12 flex flex-col items-center justify-center relative z-40 transition-all duration-300 fixed top-0 bg-white/90 backdrop-blur-md shadow-sm py-0`}
       >
         {/* Mobile Menu Toggle */}
         <button
-          className={`md:hidden absolute left-6 text-gray-900 ${isScrolled ? "top-4" : "top-6"}`}
+          className={`md:hidden absolute left-6 text-gray-900 z-50 ${isScrolled ? "top-4" : "top-6"}`}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
 
-        {/* Logo */}
-        <Link
-          to="/"
-          className={`text-center transition-all duration-300 ${isScrolled ? "mb-2" : "mb-4 md:mb-5"}`}
-        >
-          <h1
-            className={`logo-font tracking-widest uppercase font-light text-black transition-all duration-300 ${isScrolled ? "text-2xl md:text-3xl" : "text-3xl md:text-5xl"}`}
-          >
-            commonmade
-          </h1>
-          <p
-            className={`tracking-[0.3em] uppercase mt-2 text-gray-500 transition-all duration-300 ${isScrolled ? "text-[8px] md:text-[10px]" : "text-[10px] md:text-xs"}`}
-          >
-            photography
-          </p>
-        </Link>
-
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center justify-center w-full relative max-w-6xl mx-auto">
-          <nav className="flex items-center justify-center space-x-8 lg:space-x-12 mt-8">
-            {navLinks.map((link) => (
+        {/* Desktop Header Layout: Left Nav - Logo - Right Nav */}
+        <div className="hidden md:flex items-center justify-center w-full max-w-[1400px] mx-auto">
+          {/* Left Nav */}
+          <nav className="flex items-center space-x-6 lg:space-x-10 mt-10 md:mt-16">
+            {navLinks.slice(0, 3).map((link) => (
               <Link
                 key={link.name}
                 to={link.path}
@@ -128,6 +111,53 @@ export default function Layout() {
               </Link>
             ))}
           </nav>
+
+          {/* Central Logo */}
+          <Link
+            to="/"
+            className={`flex items-center justify-center transition-all duration-300 mx-8 lg:mx-16 mb-0`}
+          >
+            <img
+              src="/logo.png"
+              alt="그날의 기록 PHOTOGRAPHY"
+              className={`object-contain transition-all duration-300 -mt-12 -mb-6 md:-mt-20 md:-mb-10 h-[240px] md:h-[300px]`}
+            />
+          </Link>
+
+          {/* Right Nav */}
+          <nav className="flex items-center space-x-6 lg:space-x-10 mt-10 md:mt-16">
+            {navLinks.slice(3, 6).map((link) => (
+              <Link
+                key={link.name}
+                to={link.path}
+                className={`group relative flex items-center justify-center text-[11px] lg:text-xs uppercase tracking-widest transition-colors duration-300 ${location.pathname === link.path
+                  ? "text-black font-medium"
+                  : "text-gray-500"
+                  }`}
+              >
+                <span className="block group-hover:opacity-0 transition-opacity duration-300">
+                  {link.name}
+                </span>
+                <span className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 text-gray-400 transition-opacity duration-300 whitespace-nowrap">
+                  {link.hoverName}
+                </span>
+              </Link>
+            ))}
+          </nav>
+        </div>
+
+        {/* Mobile Logo (Visible only on mobile) */}
+        <div className="md:hidden flex flex-col items-center justify-center w-full relative">
+          <Link
+            to="/"
+            className={`flex items-center justify-center transition-all duration-300 mb-0`}
+          >
+            <img
+              src="/logo.png"
+              alt="그날의 기록 PHOTOGRAPHY"
+              className={`object-contain transition-all duration-300 -my-6 h-[240px]`}
+            />
+          </Link>
         </div>
       </header>
 
@@ -157,15 +187,18 @@ export default function Layout() {
             ))}
           </div>
 
-          <div className="pt-8 flex flex-col items-center">
-            <p className="text-[10px] tracking-[0.4em] uppercase text-gray-400 mb-4">Photography</p>
-            <h2 className="logo-font text-2xl tracking-widest uppercase text-black">commonmade</h2>
+          <div className="pt-2 flex flex-col items-center">
+            <img
+              src="/logo.png"
+              alt="그날의 기록 PHOTOGRAPHY"
+              className="h-[240px] object-contain -my-6 mb-0"
+            />
           </div>
         </div>
       )}
 
       {/* Main Content */}
-      <main className={`w-full flex-grow ${location.pathname === "/" || location.pathname === "/portfolio" ? "px-0 max-w-none pt-0 mt-8 pb-8" : "max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 pt-8 pb-24"}`}>
+      <main className={`w-full flex-grow ${location.pathname === "/" || location.pathname === "/portfolio" ? "px-0 max-w-none pt-0 mt-0 pb-8" : "max-w-[1600px] mx-auto px-4 md:px-8 lg:px-12 pt-8 pb-24"}`}>
         <Outlet />
       </main>
 
@@ -178,7 +211,7 @@ export default function Layout() {
         >
 
           <div className="text-[11px] md:text-xs text-gray-500 tracking-wide text-center">
-            © 2019 by Commonmade Photography. Proudly created.
+            © 2026 ThatDayRecord Photography. Proudly created.
           </div>
         </footer>
       </div>

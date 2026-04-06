@@ -1,29 +1,51 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getMainSlides, type MainSlide } from "../lib/firestoreService";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Autoplay } from "swiper/modules";
+import { Navigation, Autoplay, EffectFade } from "swiper/modules";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 // Import Swiper styles
 import "swiper/css";
 import "swiper/css/navigation";
+import "swiper/css/effect-fade";
+
+// 첫 번째 이미지를 브라우저가 미리 다운로드하도록 <link rel="preload"> 주입
+function preloadImage(url: string) {
+    if (!url) return;
+    const id = "main-slide-preload";
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "preload";
+    link.as = "image";
+    link.href = url;
+    document.head.appendChild(link);
+}
 
 export default function MainSlider() {
     const [slides, setSlides] = useState<MainSlide[]>([]);
     const [loading, setLoading] = useState(true);
+    const [imagesLoaded, setImagesLoaded] = useState<Record<string, boolean>>({});
+    const loadedCountRef = useRef(0);
 
     useEffect(() => {
         getMainSlides().then((data) => {
             setSlides(data);
             setLoading(false);
+            // 첫 번째 이미지 preload 주입
+            if (data.length > 0) preloadImage(data[0].url);
         });
     }, []);
 
+    const handleImageLoad = (id: string) => {
+        setImagesLoaded((prev) => ({ ...prev, [id]: true }));
+        loadedCountRef.current += 1;
+    };
+
+    // 로딩 중일 때: skeleton shimmer
     if (loading) {
         return (
-            <div className="w-full h-[70vh] flex items-center justify-center">
-                <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
-            </div>
+            <div className="w-full h-[70vh] md:h-[80vh] bg-gray-100 animate-pulse" />
         );
     }
 
@@ -37,7 +59,7 @@ export default function MainSlider() {
     }
 
     return (
-        <div className="relative w-full h-[70vh] md:h-[80vh] bg-white group">
+        <div className="relative w-full h-[70vh] md:h-[80vh] bg-gray-50 group">
 
             {slides.length > 1 && (
                 <>
@@ -53,7 +75,10 @@ export default function MainSlider() {
             )}
 
             <Swiper
-                modules={[Navigation, Autoplay]}
+                modules={[Navigation, Autoplay, EffectFade]}
+                effect="fade"
+                fadeEffect={{ crossFade: true }}
+                speed={1000}
                 navigation={
                     slides.length > 1
                         ? {
@@ -65,7 +90,7 @@ export default function MainSlider() {
                 loop={slides.length > 1}
                 centeredSlides={true}
                 slidesPerView="auto"
-                spaceBetween={20} // Adjust gap slightly for better peeking
+                spaceBetween={20}
                 autoplay={
                     slides.length > 1
                         ? { delay: 4000, disableOnInteraction: false }
@@ -78,13 +103,20 @@ export default function MainSlider() {
                         key={slide.id}
                         className="w-[85%] sm:w-[75%] md:w-[65%] lg:w-[55%] h-full transition-all duration-300"
                     >
-                        <div className="w-full h-full relative">
+                        <div className="w-full h-full relative overflow-hidden">
+                            {/* Skeleton shimmer — 이미지 로드 전에만 표시 */}
+                            {!imagesLoaded[slide.id] && (
+                                <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+                            )}
                             <img
                                 src={slide.url}
                                 alt={slide.filename || "Main slide"}
                                 loading={index === 0 ? "eager" : "lazy"}
                                 fetchPriority={index === 0 ? "high" : "auto"}
-                                className="w-full h-full object-cover object-center rounded-sm" // Optional: slight rounded corners for aesthetics
+                                decoding={index === 0 ? "sync" : "async"}
+                                onLoad={() => handleImageLoad(slide.id)}
+                                className={`w-full h-full object-cover object-center rounded-sm transition-opacity duration-500 ${imagesLoaded[slide.id] ? "opacity-100" : "opacity-0"
+                                    }`}
                             />
                         </div>
                     </SwiperSlide>
