@@ -1,13 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { getMainSlides, type MainSlide } from "../lib/firestoreService";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Navigation, Autoplay, EffectFade } from "swiper/modules";
+import { Navigation, Autoplay } from "swiper/modules";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 // Import Swiper styles
 import "swiper/css";
 import "swiper/css/navigation";
-import "swiper/css/effect-fade";
 
 // 첫 번째 이미지를 브라우저가 미리 다운로드하도록 <link rel="preload"> 주입
 function preloadImage(url: string) {
@@ -75,10 +74,8 @@ export default function MainSlider() {
             )}
 
             <Swiper
-                modules={[Navigation, Autoplay, EffectFade]}
-                effect="fade"
-                fadeEffect={{ crossFade: true }}
-                speed={1000}
+                modules={[Navigation, Autoplay]}
+                speed={800}
                 navigation={
                     slides.length > 1
                         ? {
