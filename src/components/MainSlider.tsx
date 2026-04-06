@@ -98,24 +98,26 @@ export default function MainSlider() {
                 {slides.map((slide, index) => (
                     <SwiperSlide
                         key={slide.id}
-                        className="w-[85%] sm:w-[75%] md:w-[65%] lg:w-[55%] h-full transition-all duration-300"
+                        className="w-[85%] sm:w-[75%] md:w-[65%] lg:w-[55%] h-full"
                     >
-                        <div className="w-full h-full relative overflow-hidden">
-                            {/* Skeleton shimmer — 이미지 로드 전에만 표시 */}
-                            {!imagesLoaded[slide.id] && (
-                                <div className="absolute inset-0 bg-gray-100 animate-pulse" />
-                            )}
-                            <img
-                                src={slide.url}
-                                alt={slide.filename || "Main slide"}
-                                loading={index === 0 ? "eager" : "lazy"}
-                                fetchPriority={index === 0 ? "high" : "auto"}
-                                decoding={index === 0 ? "sync" : "async"}
-                                onLoad={() => handleImageLoad(slide.id)}
-                                className={`w-full h-full object-cover object-center rounded-sm transition-opacity duration-500 ${imagesLoaded[slide.id] ? "opacity-100" : "opacity-0"
-                                    }`}
-                            />
-                        </div>
+                        {({ isActive }) => (
+                            <div className={`w-full h-full relative overflow-hidden transition-all duration-700 ${isActive ? 'blur-0 opacity-100 scale-100' : 'blur-md opacity-40 scale-[0.96]'}`}>
+                                {/* Skeleton shimmer — 이미지 로드 전에만 표시 */}
+                                {!imagesLoaded[slide.id] && (
+                                    <div className="absolute inset-0 bg-gray-100 animate-pulse" />
+                                )}
+                                <img
+                                    src={slide.url}
+                                    alt={slide.filename || "Main slide"}
+                                    loading={index === 0 ? "eager" : "lazy"}
+                                    fetchPriority={index === 0 ? "high" : "auto"}
+                                    decoding={index === 0 ? "sync" : "async"}
+                                    onLoad={() => handleImageLoad(slide.id)}
+                                    className={`w-full h-full object-cover object-center rounded-sm transition-opacity duration-500 ${imagesLoaded[slide.id] ? "opacity-100" : "opacity-0"
+                                        }`}
+                                />
+                            </div>
+                        )}
                     </SwiperSlide>
                 ))}
             </Swiper>
