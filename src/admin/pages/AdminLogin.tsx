@@ -35,7 +35,7 @@ export default function AdminLogin() {
                         <Camera size={28} className="text-gray-800" />
                     </div>
                     <h1 className="text-xs font-semibold tracking-[0.3em] uppercase text-black">
-                        commonmade
+                        thedayrecord
                     </h1>
                     <p className="text-[10px] text-gray-400 tracking-widest mt-1">
                         Admin Login

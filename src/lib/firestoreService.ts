@@ -435,10 +435,10 @@ export async function seedInitialData(): Promise<void> {
     const defaults: Record<string, string> = {
         instagram: "#",
         kakao: "#",
-        email: "hello@commonmade.com",
+        email: "hello@thedayrecord.com",
         phone: "+82 10 0000 0000",
         address: "Seoul, South Korea",
-        copyright: "© 2019 by Commonmade Photography. Proudly created.",
+        copyright: "© 2026 by The Day Record. Proudly created.",
     };
     for (const [key, value] of Object.entries(defaults)) {
         const existing = await getDoc(doc(db, "siteConfig", key));

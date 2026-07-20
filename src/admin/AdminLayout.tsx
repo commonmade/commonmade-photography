@@ -115,7 +115,7 @@ export default function AdminLayout() {
                         <Camera size={20} className="text-gray-800" />
                         <div>
                             <p className="text-xs font-semibold tracking-widest uppercase text-black">
-                                commonmade
+                                thedayrecord
                             </p>
                             <p className="text-[10px] text-gray-400 tracking-widest">
                                 Admin Dashboard

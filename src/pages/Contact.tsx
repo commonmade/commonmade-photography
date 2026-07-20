@@ -41,9 +41,9 @@ const DEFAULTS = {
   subtitle: "",
   address: "123 Photography Lane\nCreative District, Seoul\nSouth Korea",
   phone: "+82 10 1234 5678",
-  email: "commonmade@naver.com",
-  instagram: "@commonmade_photography",
-  kakao: "commonmade",
+  email: "thedayrecord@naver.com",
+  instagram: "@thedayrecord",
+  kakao: "thedayrecord",
   form_title: "Send an Inquiry",
   form_subtitle:
     "Please fill out the form below to inquire about our availability and pricing.",
